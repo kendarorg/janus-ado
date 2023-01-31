@@ -12,7 +12,10 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -23,7 +26,7 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
     private AsynchronousServerSocketChannel sockServer;
     private Connection conn;
     private int maxTimeout;
-    private List<PGClientMessage> storage=new ArrayList<>();
+    private  Queue<Object> storage=new LinkedBlockingQueue<>();
 
     public LocalCompletionHandler(AsynchronousSocketChannel client, AsynchronousServerSocketChannel sockServer,
                                   Supplier<Connection> conn,int maxTimeout) {
@@ -127,13 +130,18 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
     }
 
     @Override
-    public void add(PGClientMessage pgClientMessage) {
+    public void add(Object pgClientMessage) {
         storage.add(pgClientMessage);
     }
 
     @Override
-    public PGClientMessage get(Predicate<PGClientMessage> test) {
-        PGClientMessage item = null;
+    public Object get(Predicate<Object> test) {
+        Object item = null;
+        item = storage.peek();
+        if(test.test(item)){
+            storage.remove(item);
+            return item;
+        }
         try {
             for (var st : storage) {
                 if (test.test(st)) {

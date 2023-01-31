@@ -11,7 +11,7 @@ import java.util.function.Predicate;
 public interface Context {
     Future<Integer> write(PGServerMessage readyForQuery);
 
-    void add(PGClientMessage pgClientMessage);
-    PGClientMessage get(Predicate<PGClientMessage> test);
+    void add(Object pgClientMessage);
+    Object get(Predicate<Object> test);
     Connection getConnection();
 }

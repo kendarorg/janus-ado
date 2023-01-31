@@ -21,10 +21,13 @@ public class RealResultBuilder {
         var conn = client.getConnection();
         var query = queryMessage.getQuery();
         try {
-            var result = conn.createStatement().execute(query);
+            var st=conn.createStatement();
+            var result = st.execute(query);
             if(!result){
                 CommandComplete commandComplete = new CommandComplete(query);
                 return client.write(commandComplete);
+            }else{
+                loadResultset(client, st);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -37,7 +40,14 @@ public class RealResultBuilder {
         Future<Integer> writeResult;
         var conn = client.getConnection();
         var query = parseMessage.getQuery();
+
+
+
         try {
+            if(query.startsWith(":JANUS:")){
+                return handleSpecialQuery(conn,query,client);
+            }
+
             var result = false;
             Statement st = null;
             if(parseMessage.getBinds()!=null && parseMessage.getBinds().size()>0){
@@ -59,29 +69,7 @@ public class RealResultBuilder {
                 result = st.execute(query);
             }
             if(result){
-                var rs= st.getResultSet();
-                var md = rs.getMetaData();
-
-                var fields = new ArrayList<Field>();
-                for(var i=0;i<md.getColumnCount();i++){
-                    fields.add(new Field(
-                            md.getColumnName(i+1),
-                            0,
-                            0, convertType(md.getColumnType(i+1))
-                            , md.getPrecision(i+1), -1, 0));
-                }
-
-                RowDescription rowDescription = new RowDescription(fields);
-                writeResult = client.write(rowDescription);
-                while(rs.next()){
-                    var byteRow = new ArrayList<ByteBuffer>();
-                    for(var i=0;i<fields.size();i++){
-                        byteRow.add(ByteBuffer.wrap(buildData(fields.get(i),rs,i+1)));
-                    }
-                    DataRow dataRow = new DataRow(byteRow);
-                    writeResult = client.write(dataRow);
-                }
-
+                loadResultset(client, st);
             }
         } catch (SQLException e) {
             ErrorResponse errorResponse = new ErrorResponse(e.getMessage());
@@ -89,6 +77,81 @@ public class RealResultBuilder {
         }
         CommandComplete commandComplete = new CommandComplete(query);
         return client.write(commandComplete);
+    }
+
+    private static void loadResultset(Context client, Statement st) throws SQLException {
+        Future<Integer> writeResult;
+        var rs= st.getResultSet();
+        var md = rs.getMetaData();
+
+        var fields = new ArrayList<Field>();
+        for(var i=0;i<md.getColumnCount();i++){
+            fields.add(new Field(
+                    md.getColumnName(i+1),
+                    0,
+                    0, convertType(md.getColumnType(i+1))
+                    , md.getPrecision(i+1), -1, 0));
+        }
+
+        RowDescription rowDescription = new RowDescription(fields);
+        writeResult = client.write(rowDescription);
+        while(rs.next()){
+            var byteRow = new ArrayList<ByteBuffer>();
+            for(var i=0;i<fields.size();i++){
+                byteRow.add(ByteBuffer.wrap(buildData(fields.get(i),rs,i+1)));
+            }
+            DataRow dataRow = new DataRow(byteRow);
+            writeResult = client.write(dataRow);
+        }
+    }
+
+    private static Future<Integer> handleSpecialQuery(Connection conn, String query, Context client) throws SQLException {
+        if (query.equalsIgnoreCase("JANUS:BEGIN_TRANSACTION")) {
+            if(conn.getAutoCommit())conn.setAutoCommit(false);
+        } else if (query.equalsIgnoreCase("JANUS:ROLLBACK_TRANSACTION")) {
+            conn.rollback();
+        } else if (query.equalsIgnoreCase("JANUS:COMMIT_TRANSACTION")) {
+            conn.commit();
+            conn.setAutoCommit(true);
+        }else if (query.startsWith("JANUS:SET_SAVEPOINT:")) {
+            if(conn.getAutoCommit())conn.setAutoCommit(false);
+            var val = query.split(":");
+            if(val[2].isEmpty()) {
+                var savepoint = conn.setSavepoint();
+                client.add(savepoint);
+            }else{
+                var savepoint = conn.setSavepoint(val[2]);
+                client.add(savepoint);
+            }
+        }else if (query.startsWith("JANUS:RELEASE_SAVEPOINT:")) {
+            var val = query.split(":");
+
+            Savepoint svp = getSavepoint(client, val);
+            if(svp!=null){
+                conn.releaseSavepoint(svp);
+            }
+        }else if (query.startsWith("JANUS:ROLLBACK_SAVEPOINT:")) {
+            var val = query.split(":");
+
+            Savepoint svp = getSavepoint(client, val);
+            if(svp!=null){
+                conn.rollback(svp);
+            }
+        }
+        throw new RuntimeException("NOT IMPLEMENTED SPECIAL QUERIES");
+    }
+
+    private static Savepoint getSavepoint(Context client, String[] val) {
+        var svp =(Savepoint) client.get((o)->{
+            if(!(o instanceof Savepoint))return false;
+            var sp = (Savepoint)o;
+            var name = "";
+            try{
+                name = sp.getSavepointName();
+            }catch (Exception ex){}
+            return name.equalsIgnoreCase(val[2]);
+        });
+        return svp;
     }
 
     private static byte[] buildData(Field field, ResultSet rs, int i) throws SQLException {
