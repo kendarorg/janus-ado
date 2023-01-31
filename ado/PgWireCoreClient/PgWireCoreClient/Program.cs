@@ -23,6 +23,7 @@ conn.ConnectionString = "Host=localhost; Database=test;";
 conn.Open();
 conn.Close();
 
+Console.WriteLine("DONE!");
 /*
 
 DbProviderFactory factory = DbProviderFactories.GetFactory("Npgsql");

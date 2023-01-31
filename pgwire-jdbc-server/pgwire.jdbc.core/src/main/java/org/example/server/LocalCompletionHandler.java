@@ -22,20 +22,23 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
     private AsynchronousSocketChannel client;
     private AsynchronousServerSocketChannel sockServer;
     private Connection conn;
+    private int maxTimeout;
     private List<PGClientMessage> storage=new ArrayList<>();
 
-    public LocalCompletionHandler(AsynchronousSocketChannel client, AsynchronousServerSocketChannel sockServer, Supplier<Connection> conn) {
+    public LocalCompletionHandler(AsynchronousSocketChannel client, AsynchronousServerSocketChannel sockServer,
+                                  Supplier<Connection> conn,int maxTimeout) {
 
         this.client = client;
         this.sockServer = sockServer;
         this.conn = conn.get();
+        this.maxTimeout = maxTimeout;
     }
 
     @Override
     public void completed(Integer result, ByteBuffer attachment) {
         attachment.flip();
         if (result != -1) {
-            onMessageReceived(client, attachment);
+            onMessageReceived(client, attachment,maxTimeout);
         }
         attachment.clear();
         client.read(attachment, attachment, this);
@@ -61,7 +64,7 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
 
 
 
-    private void onMessageReceived(AsynchronousSocketChannel client, ByteBuffer buffer) {
+    private void onMessageReceived(AsynchronousSocketChannel client, ByteBuffer buffer,int maxTimeout) {
         //System.out.println("[SERVER] Received message from client: " + client);
         //System.out.println("[SERVER] Buffer: " + buffer);
 
@@ -88,8 +91,8 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
                         }
                     }
                 }
-                if(timeout< (new Date().getTime()-2000)){
-                    //shouldCloseConnection=true;
+                if(timeout< (new Date().getTime()-maxTimeout)){
+                    shouldCloseConnection=true;
                 }
             }
             if(shouldCloseConnection){

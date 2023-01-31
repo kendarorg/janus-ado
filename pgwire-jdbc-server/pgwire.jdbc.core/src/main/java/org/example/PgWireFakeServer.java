@@ -40,6 +40,10 @@ public class PgWireFakeServer {
     static boolean useFakeResponse=false;
 
     public static void start(Supplier<Connection> conn) throws IOException, InterruptedException, ExecutionException {
+        start(conn,2000);
+    }
+
+    public static void start(Supplier<Connection> conn,int maxTimeout) throws IOException, InterruptedException, ExecutionException {
         ExecutorService executor = Executors.newFixedThreadPool(20);
         AsynchronousChannelGroup group = AsynchronousChannelGroup.withThreadPool(executor);
 
@@ -54,7 +58,7 @@ public class PgWireFakeServer {
                     AsynchronousSocketChannel client = future.get();
                     System.out.println("[SERVER] Accepted connection from " + client.getRemoteAddress());
                     ByteBuffer buffer = ByteBuffer.allocate(64000);
-                    client.read(buffer, buffer, new LocalCompletionHandler(client, sockServer, conn));
+                    client.read(buffer, buffer, new LocalCompletionHandler(client, sockServer, conn,maxTimeout));
                 }catch (Exception ex){
 
                 }
