@@ -28,7 +28,7 @@ namespace PgWireAdo.wire.server
             foreach (var parameter in _parameters)
             {
                 var k = Encoding.ASCII.GetBytes(parameter.Key);
-                var v = Encoding.ASCII.GetBytes(parameter.Key);
+                var v = Encoding.ASCII.GetBytes(parameter.Value);
                 data.Add(k);
                 data.Add(new byte[]{0});
                 data.Add(v);

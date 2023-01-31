@@ -283,5 +283,34 @@ namespace PgWireAdo.utils
             return ASCIIEncoding.Default.GetString(ms.ToArray());
         }
 
+        public short ReadInt16()
+        {
+            var intArray = new byte[2];
+            int r = Read(intArray, 0, 2);
+            return BinaryPrimitives.ReverseEndianness(BitConverter.ToInt16(intArray, 0));
+        }
+
+        public string ReadUTF8String(int length = int.MaxValue)
+        {
+            var ms = new MemoryStream();
+
+            while (length > 0)
+            {
+                var byt = (byte)ReadByte();
+                if (byt != 0)
+                {
+                    ms.WriteByte(byt);
+                }
+                else
+                {
+                    break;
+                }
+
+                length--;
+            }
+
+            return UTF8Encoding.Default.GetString(ms.ToArray());
+
+        }
     }
 }

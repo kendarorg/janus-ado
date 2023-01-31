@@ -22,7 +22,36 @@ public class PgwConnection : DbConnection
     private TcpClient _client;
     private ReadSeekableStream _stream;
 
-    #region TOIMPLEMENT
+
+
+    public override void Open()
+    {
+        _client = new TcpClient(_options.DataSource, _options.Port);
+        _stream = new ReadSeekableStream(_client.GetStream(), 1024);
+        _state = ConnectionState.Open;
+        var sslNegotiation = new SSLNegotation();
+        sslNegotiation.Write(_stream);
+        var parameters = new Dictionary<String, String>();
+        parameters.Add("database", Database);
+        var startup = new StartupMessage(parameters);
+        startup.Write(_stream);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (_state != ConnectionState.Closed)
+        {
+            _state = ConnectionState.Closed;
+            if (disposing)
+            {
+                _stream.Dispose();
+                _client.Dispose();
+            }
+        }
+
+        base.Dispose(disposing);
+    }
+
     public override string ConnectionString {
         get { return _connectionString; }
         set
@@ -41,15 +70,8 @@ public class PgwConnection : DbConnection
     public override string DataSource => _options.DataSource;
     public override string ServerVersion => _options.ServerVersion;
 
-    protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
-    {
-        throw new NotImplementedException();
-    }
+    public ReadSeekableStream Stream => _stream;
 
-    public override void ChangeDatabase(string databaseName)
-    {
-        throw new NotImplementedException();
-    }
 
     public override void Close()
     {
@@ -60,37 +82,23 @@ public class PgwConnection : DbConnection
         _client.Dispose();
 
     }
+    #region TOIMPLEMENT
 
-    protected override DbCommand CreateDbCommand()
+    protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
     {
         throw new NotImplementedException();
     }
 
+    public override void ChangeDatabase(string databaseName)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override DbCommand CreateDbCommand()
+    {
+        return new PgwCommand(this);
+    }
+
     #endregion
-
-    public override void Open()
-    {
-        _client = new TcpClient(_options.DataSource, _options.Port);
-        _stream = new ReadSeekableStream(_client.GetStream(), 1024);
-        _state = ConnectionState.Open;
-        var sslNegotiation = new SSLNegotation();
-        sslNegotiation.Write(_stream);
-        var parameters = new Dictionary<String, String>();
-        parameters.Add("database", Database);
-        var startup = new StartupMessage(parameters);
-        startup.Write(_stream);
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        _state = ConnectionState.Closed;
-        if (disposing)
-        {
-            _stream.Dispose();
-            _client.Dispose();
-        }
-
-        base.Dispose(disposing);
-    }
 }
 

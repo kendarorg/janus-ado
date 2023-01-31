@@ -18,9 +18,10 @@ namespace PgWireAdo.wire.client
 
         public override void Read(ReadSeekableStream stream)
         {
-            stream.ReadByte();
-            stream.ReadInt32();
-            stream.ReadByte();
+            var id =(char)stream.ReadByte();
+            var len = stream.ReadInt32();
+            var type = (char)stream.ReadByte();
+            Console.WriteLine("");
         }
     }
 }

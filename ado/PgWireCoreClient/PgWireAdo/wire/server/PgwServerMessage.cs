@@ -35,6 +35,7 @@ namespace PgWireAdo.wire.server
         protected void Flush(Stream stream)
         {
             stream.Write(toSend.ToArray());
+            stream.Flush();
         }
 
         protected void Write(byte[] stream)

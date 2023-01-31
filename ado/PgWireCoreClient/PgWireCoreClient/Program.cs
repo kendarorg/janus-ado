@@ -21,6 +21,9 @@ DbProviderFactory factory = PgwProviderFactory.Instance;
 DbConnection conn = factory.CreateConnection();
 conn.ConnectionString = "Host=localhost; Database=test;";
 conn.Open();
+var cmd = conn.CreateCommand();
+cmd.CommandText = "create table if not exists test(id int, name varchar)";
+cmd.ExecuteNonQuery();
 conn.Close();
 
 Console.WriteLine("DONE!");
