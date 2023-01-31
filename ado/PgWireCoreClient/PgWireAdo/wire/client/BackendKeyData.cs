@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PgWireAdo.utils;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -7,14 +8,14 @@ using System.Threading.Tasks;
 
 namespace PgWireAdo.wire.client
 {
-    public class BackendKeyData:PGClientMessage
+    public class BackendKeyData:PgwClientMessage
     {
-        public bool IsMatching(NetworkStream stream)
+        public bool IsMatching(ReadSeekableStream stream)
         {
             throw new NotImplementedException();
         }
 
-        public void Read(NetworkStream stream)
+        public void Read(ReadSeekableStream stream)
         {
             throw new NotImplementedException();
         }

@@ -20,7 +20,7 @@ public class PgwConnection : DbConnection
     private string _connectionString;
     private ConnectionState _state = ConnectionState.Closed;
     private TcpClient _client;
-    private NetworkStream _stream;
+    private ReadSeekableStream _stream;
 
     #region TOIMPLEMENT
     public override string ConnectionString {
@@ -71,7 +71,7 @@ public class PgwConnection : DbConnection
     public override void Open()
     {
         _client = new TcpClient(_options.DataSource, _options.Port);
-        _stream = _client.GetStream();
+        _stream = new ReadSeekableStream(_client.GetStream(), 1024);
         _state = ConnectionState.Open;
         var sslNegotiation = new SSLNegotation();
         sslNegotiation.Write(_stream);

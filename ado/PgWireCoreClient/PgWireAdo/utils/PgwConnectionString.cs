@@ -24,9 +24,11 @@ namespace PgWireAdo.utils
         private void Load(string connectionString)
         {
             var splitted = connectionString.Split(";");
-            foreach (var kv in splitted)
+            foreach (var kvv in splitted)
             {
+                var kv = kvv.Trim();
                 var sub = kv.Split("=");
+                if(sub.Length!=2)continue;
                 var k = sub[0].ToLowerInvariant();
                 var v = sub[1];
                 switch (k)

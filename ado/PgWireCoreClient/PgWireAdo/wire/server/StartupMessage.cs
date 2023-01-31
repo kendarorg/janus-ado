@@ -4,11 +4,12 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using PgWireAdo.utils;
 using PgWireAdo.wire.client;
 
 namespace PgWireAdo.wire.server
 {
-    public class StartupMessage : PGServerMessage
+    public class StartupMessage : PgwServerMessage
     {
         private readonly Dictionary<string, string> _parameters;
         readonly Dictionary<string, string> _serverParameters = new ();
@@ -20,7 +21,7 @@ namespace PgWireAdo.wire.server
 
         public IDictionary<string, string> ServerParameters => _serverParameters;
 
-        public void Write(NetworkStream stream)
+        public void Write(ReadSeekableStream stream)
         {
             //SEND THE MESSAGE PLUS PARAMETERS
             var authenticationOk = new AuthenticationOk();
@@ -42,9 +43,11 @@ namespace PgWireAdo.wire.server
                     if (readyForQuery.IsMatching(stream))
                     {
                         readyForQuery.Read(stream);
+                        return;
                     }
                 }
             }
+            throw new Exception("[ERROR] StartupMessage");
         }
     }
 }

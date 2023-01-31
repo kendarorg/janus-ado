@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PgWireAdo.utils;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -7,16 +8,19 @@ using System.Threading.Tasks;
 
 namespace PgWireAdo.wire.client
 {
-    public class SSLResponse :PGClientMessage
+    public class SSLResponse :PgwClientMessage
     {
-        public bool IsMatching(NetworkStream stream)
+        public bool IsMatching(ReadSeekableStream stream)
         {
-            throw new NotImplementedException();
+            var position = stream.Position;
+            var result = stream.ReadByte() == (byte)BackendMessageCode.NoticeResponse;
+            stream.Position=position;
+            return result;
         }
 
-        public void Read(NetworkStream stream)
+        public void Read(ReadSeekableStream stream)
         {
-            throw new NotImplementedException();
+            stream.ReadByte();
         }
     }
 }
