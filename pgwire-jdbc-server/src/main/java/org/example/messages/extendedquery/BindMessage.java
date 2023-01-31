@@ -7,16 +7,36 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 public class BindMessage implements PGClientMessage {
+    public String getDestinationPortalName() {
+        return destinationPortalName;
+    }
+
+    public String getSourcePsName() {
+        return sourcePsName;
+    }
+
+    public short[] getParamFormatCodes() {
+        return paramFormatCodes;
+    }
+
+    public ArrayList<Object> getParameterValues() {
+        return parameterValues;
+    }
+
+    public short[] getResultColumnFormatCodes() {
+        return resultColumnFormatCodes;
+    }
+
     private String destinationPortalName;
     private String sourcePsName;
     private short[] paramFormatCodes;
-    private ArrayList<byte[]> parameterValues;
+    private ArrayList<Object> parameterValues;
     private short[] resultColumnFormatCodes;
 
     public BindMessage(){
 
     }
-    public BindMessage(String destinationPortalName, String sourcePsName, short[] paramFormatCodes, ArrayList<byte[]> parameterValues, short[] resultColumnFormatCodes) {
+    public BindMessage(String destinationPortalName, String sourcePsName, short[] paramFormatCodes, ArrayList<Object> parameterValues, short[] resultColumnFormatCodes) {
 
         this.destinationPortalName = destinationPortalName;
         this.sourcePsName = sourcePsName;
@@ -38,14 +58,22 @@ public class BindMessage implements PGClientMessage {
             paramFormatCodes[i]=buffer.getShort();
         }
         var parameterValuesThatFollow = buffer.getShort();
-        var parameterValues = new ArrayList<byte[]>();
+        var parameterValues = new ArrayList<Object>();
         if(parameterValuesThatFollow>0){
-            var parameterLength = buffer.getInt();
-            var dst = new byte[parameterLength];
-            for(var i=0;i<parameterLength;i++){
-                dst[i]=buffer.get();
+            for(var i=0;i<parameterValuesThatFollow;i++) {
+                var parameterLength = buffer.getInt();
+                var isString = paramFormatCodes[i]==0;
+                var dst = new byte[parameterLength+(isString?1:0)];
+                var j=0;
+                for (; j < parameterLength; j++) {
+                    dst[j] = buffer.get();
+                }
+                if(paramFormatCodes[i]==0) {
+                    parameterValues.add(new String(dst));
+                }else{
+                    parameterValues.add(dst);
+                }
             }
-            parameterValues.add(dst);
         }
         var resultColumnFormatCodesCount = buffer.getShort();
         var resultColumnFormatCodes = new short[resultColumnFormatCodesCount];

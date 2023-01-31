@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.sql.*;
+import java.util.Calendar;
 import java.util.concurrent.ExecutionException;
 
 public class TestServer {
@@ -111,6 +112,54 @@ public class TestServer {
         conn.createStatement().execute("drop table test");
     }
 
+    @Test
+    void testPerparedStatementTable() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+
+
+        //conn.prepareStatement("create table test(id int)").execute();
+        PgWireFakeServer.setUseFakeResponse(false);
+        String url = POSTGRES_FAKE_CONNECTION_STRING;
+        Connection conn = DriverManager.getConnection(url);
+
+        conn.createStatement().execute("create table if not exists test(id int, name varchar)");
+        conn.createStatement().execute("insert into test values(1,'fuffa')");
+        conn.createStatement().execute("insert into test values(2,'faffa')");
+        var ps = conn.prepareStatement("select * FROM test where id=?");
+        ps.setString(1,"1");
+        var result = ps.executeQuery();
+        while(result.next()){
+            System.out.println(result.getInt(1)+"-"+result.getString(2));
+        }
+
+        conn.createStatement().execute("drop table test");
+    }
+
+
+
+    @Test
+    void testCall() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+
+        //conn.prepareStatement("create table test(id int)").execute();
+        PgWireFakeServer.setUseFakeResponse(false);
+        String url = POSTGRES_FAKE_CONNECTION_STRING;
+        Connection conn = DriverManager.getConnection(url);
+
+        var sp = "CREATE ALIAS IP_ADDRESS AS '\n" +
+                "@CODE\n" +
+                "String getString() throws Exception {\n" +
+                "    return \"TEST\";\n" +
+                "}\n" +
+                "';";
+
+        conn.createStatement().execute(sp);
+        var ps = conn.prepareCall("CALL IP_ADDRESS()");
+        var result = ps.executeQuery();
+        while(result.next()){
+            System.out.println(result.getString(1));
+        }
+
+        conn.createStatement().execute("drop ALIAS IP_ADDRESS");
+    }
 
 
     @Test

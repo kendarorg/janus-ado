@@ -12,9 +12,7 @@ import org.example.server.TypesOids;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.concurrent.Future;
 
@@ -40,8 +38,26 @@ public class RealResultBuilder {
         var conn = client.getConnection();
         var query = parseMessage.getQuery();
         try {
-            var st = conn.createStatement();
-            var result = st.execute(query);
+            var result = false;
+            Statement st = null;
+            if(parseMessage.getBinds()!=null && parseMessage.getBinds().size()>0){
+                var bind = parseMessage.getBinds().get(0);
+                if(bind.getParameterValues().size()>0){
+                    st = conn.prepareStatement(query);
+                    for(var i=0;i<bind.getParameterValues().size();i++){
+                        if(bind.getParamFormatCodes()[i]==0){
+                            ((PreparedStatement)st).setString(i+1,(String)bind.getParameterValues().get(i));
+                        }else{
+                            ((PreparedStatement)st).setBytes(i+1,(byte[])bind.getParameterValues().get(i));
+                        }
+                    }
+                    result = ((PreparedStatement) st).execute();
+                }
+            }
+            if(st==null) {
+                st = conn.createStatement();
+                result = st.execute(query);
+            }
             if(result){
                 var rs= st.getResultSet();
                 var md = rs.getMetaData();
