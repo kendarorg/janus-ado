@@ -11,4 +11,8 @@
     <PackageReference Include="Npgsql" Version="7.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\PgWireAdo\PgWireAdo.csproj" />
+  </ItemGroup>
+
 </Project>

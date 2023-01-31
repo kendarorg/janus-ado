@@ -10,6 +10,7 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
@@ -69,6 +70,7 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
         try{
             var shouldCloseConnection = false;
             var matchingCount = 0;
+            var timeout = new Date().getTime();
             while(buffer.hasRemaining() && !shouldCloseConnection) {
                 for (var msg : messages) {
                     if (msg.isMatching(buffer)) {
@@ -85,6 +87,9 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
                             break;
                         }
                     }
+                }
+                if(timeout< (new Date().getTime()-2000)){
+                    //shouldCloseConnection=true;
                 }
             }
             if(shouldCloseConnection){

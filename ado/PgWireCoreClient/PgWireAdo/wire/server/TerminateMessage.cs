@@ -10,7 +10,7 @@ namespace PgWireAdo.wire.server
 {
     public class TerminateMessage : PgwServerMessage
     {
-        public void Write(ReadSeekableStream stream)
+        public override void Write(ReadSeekableStream stream)
         {
             //DO STUFF
             throw new NotImplementedException();

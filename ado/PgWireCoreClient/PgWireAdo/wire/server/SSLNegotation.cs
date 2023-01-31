@@ -12,17 +12,18 @@ namespace PgWireAdo.wire.server
 {
     public class SSLNegotation : PgwServerMessage
     {
-        public void Write(ReadSeekableStream stream)
+        public override void Write(ReadSeekableStream stream)
         {
-            stream.WriteByte(0x00);
-            stream.WriteByte(0x00);
-            stream.WriteByte(0x00);
-            stream.WriteByte(0x00);
+            WriteByte(0x00);
+            WriteByte(0x00);
+            WriteByte(0x00);
+            WriteByte(0x00);
 
-            stream.WriteByte(0x04);
-            stream.WriteByte(0xd2);
-            stream.WriteByte(0x16);
-            stream.WriteByte(0x2f);
+            WriteByte(0x04);
+            WriteByte(0xd2);
+            WriteByte(0x16);
+            WriteByte(0x2f);
+            Flush(stream);
             //DO STUFF
             var sslResponse = new SSLResponse();
             if (sslResponse.IsMatching(stream))

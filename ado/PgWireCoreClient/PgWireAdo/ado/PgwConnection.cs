@@ -76,6 +76,7 @@ public class PgwConnection : DbConnection
         var sslNegotiation = new SSLNegotation();
         sslNegotiation.Write(_stream);
         var parameters = new Dictionary<String, String>();
+        parameters.Add("database", Database);
         var startup = new StartupMessage(parameters);
         startup.Write(_stream);
     }

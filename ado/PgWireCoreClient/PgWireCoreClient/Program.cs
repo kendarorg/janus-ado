@@ -2,6 +2,7 @@
 
 using System.Data;
 using System.Data.Common;
+using PgWireAdo.ado;
 
 DbProviderFactories.RegisterFactory("Npgsql", Npgsql.NpgsqlFactory.Instance);
 
@@ -15,6 +16,13 @@ using (DataTable providers = DbProviderFactories.GetFactoryClasses())
         Console.WriteLine("Invariant Name:{0}", prov["InvariantName"]);
     }
 }
+
+DbProviderFactory factory = PgwProviderFactory.Instance;
+DbConnection conn = factory.CreateConnection();
+conn.ConnectionString = "Host=localhost; Database=test;";
+conn.Open();
+
+/*
 
 DbProviderFactory factory = DbProviderFactories.GetFactory("Npgsql");
 DbConnection conn = factory.CreateConnection();
@@ -43,3 +51,4 @@ if (reader.HasRows)
             reader.GetString(1));
     }
 }
+*/

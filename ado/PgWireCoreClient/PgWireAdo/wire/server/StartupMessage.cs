@@ -21,8 +21,32 @@ namespace PgWireAdo.wire.server
 
         public IDictionary<string, string> ServerParameters => _serverParameters;
 
-        public void Write(ReadSeekableStream stream)
+        public override void Write(ReadSeekableStream stream)
         {
+            var data = new List<byte[]>();
+            int length = 4 + 4+1;
+            foreach (var parameter in _parameters)
+            {
+                var k = Encoding.ASCII.GetBytes(parameter.Key);
+                var v = Encoding.ASCII.GetBytes(parameter.Key);
+                data.Add(k);
+                data.Add(new byte[]{0});
+                data.Add(v);
+                data.Add(new byte[] { 0 });
+                length += k.Length;
+                length += v.Length;
+            }
+            WriteInt32(length);
+            WriteByte(0x00);
+            WriteByte(0x03);
+            WriteByte(0x00);
+            WriteByte(0x00);
+            foreach (byte[] row in data)
+            {
+                Write(row);
+            }
+            Flush(stream);
+
             //SEND THE MESSAGE PLUS PARAMETERS
             var authenticationOk = new AuthenticationOk();
             if (authenticationOk.IsMatching(stream))

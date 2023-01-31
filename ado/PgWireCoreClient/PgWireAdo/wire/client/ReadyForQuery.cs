@@ -10,12 +10,12 @@ namespace PgWireAdo.wire.client
 {
     public class ReadyForQuery:PgwClientMessage
     {
-        public bool IsMatching(ReadSeekableStream stream)
+        public override bool IsMatching(ReadSeekableStream stream)
         {
             throw new NotImplementedException();
         }
 
-        public void Read(ReadSeekableStream stream)
+        public override void Read(ReadSeekableStream stream)
         {
             throw new NotImplementedException();
         }
