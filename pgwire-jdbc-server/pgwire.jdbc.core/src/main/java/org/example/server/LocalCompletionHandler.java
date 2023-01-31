@@ -80,7 +80,6 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
             while(buffer.hasRemaining() && !shouldCloseConnection) {
                 for (var msg : messages) {
                     if (msg.isMatching(buffer)) {
-
                         System.out.println("[SERVER] Received: " + msg.getClass().getSimpleName());
                         if (msg instanceof TerminateMessage) {
                             shouldCloseConnection = true;

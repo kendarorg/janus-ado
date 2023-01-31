@@ -24,7 +24,8 @@ public class RealResultBuilder {
             var st=conn.createStatement();
             var result = st.execute(query);
             if(!result){
-                CommandComplete commandComplete = new CommandComplete(query);
+                var updateCount = st.getUpdateCount();
+                CommandComplete commandComplete = new CommandComplete("RESULT "+updateCount);
                 return client.write(commandComplete);
             }else{
                 loadResultset(client, st);

@@ -41,7 +41,7 @@ public class StartupMessage implements PGClientMessage {
         for(var j=0;j<strings.size()-1;j+=2){
             parameters.put(strings.get(j),strings.get(j+1));
         }
-        buffer.position(prev + length);
+        //buffer.position(prev + length);
         return new StartupMessage(parameters);
     }
 
