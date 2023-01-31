@@ -33,7 +33,7 @@ public class QueryMessage implements PGClientMessage {
     @Override
     public PGClientMessage decode(ByteBuffer buffer) {
         var prev= buffer.position();
-        var length = buffer.getInt(0);
+        var length = buffer.getInt(1);
         buffer.position(5);
         var query = PGClientMessage.extractStrings(buffer);
         buffer.position(prev+length);

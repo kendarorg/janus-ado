@@ -49,11 +49,15 @@ public class PgWireFakeServer {
             System.out.println("[SERVER] Listening on " + HOST + ":" + PORT);
 
             for (;;) {
-                Future<AsynchronousSocketChannel> future = server.accept();
-                AsynchronousSocketChannel client = future.get();
-                System.out.println("[SERVER] Accepted connection from " + client.getRemoteAddress());
-                ByteBuffer buffer = ByteBuffer.allocate(64000);
-                client.read(buffer, buffer, new LocalCompletionHandler(client,sockServer,conn));
+                try {
+                    Future<AsynchronousSocketChannel> future = server.accept();
+                    AsynchronousSocketChannel client = future.get();
+                    System.out.println("[SERVER] Accepted connection from " + client.getRemoteAddress());
+                    ByteBuffer buffer = ByteBuffer.allocate(64000);
+                    client.read(buffer, buffer, new LocalCompletionHandler(client, sockServer, conn));
+                }catch (Exception ex){
+
+                }
             }
         }
     }

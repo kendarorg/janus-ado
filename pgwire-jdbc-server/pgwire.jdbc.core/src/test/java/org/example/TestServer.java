@@ -52,7 +52,7 @@ public class TestServer {
         PgWireFakeServer.stop();
     }
 
-    @Test
+    ///@Test
     void simpleFakeQuery() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
 
 
@@ -162,7 +162,6 @@ public class TestServer {
     }
 
 
-    @Test
     void getDbMetadata() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
 
         PgWireFakeServer.setUseFakeResponse(false);

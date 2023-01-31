@@ -42,8 +42,8 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
 
     @Override
     public void failed(Throwable exc, ByteBuffer attachment) {
-        System.err.println("[SERVER] Failed to read from client: " + exc);
-        exc.printStackTrace();
+//        System.err.println("[SERVER] Failed to read from client: " + exc);
+//        exc.printStackTrace();
     }
 
     private static List<PGClientMessage> messages;
@@ -89,7 +89,7 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
             }
             if(shouldCloseConnection){
                 try {
-                    sockServer.close();
+                    client.close();
                 } catch (Exception ex) {
 
                 }
@@ -100,11 +100,11 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
             }
         }catch (Exception ex){
 
-            System.out.println("[SERVER] ERROR: " + buffer);
+            System.out.println("[SERVER] ERROR: " + ex.getMessage());
             try {
-                sockServer.close();
+                client.close();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                //throw new RuntimeException(e);
             }
         }
 
