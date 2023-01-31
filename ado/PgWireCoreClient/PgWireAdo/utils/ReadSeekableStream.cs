@@ -260,5 +260,28 @@ namespace PgWireAdo.utils
             var val = BitConverter.GetBytes(value);
             _underlyingStream.Write(val);
         }
+
+        public virtual String ReadAsciiString(int length=int.MaxValue)
+        {
+            var ms = new MemoryStream();
+
+            while (length > 0)
+            {
+                var byt = (byte)ReadByte();
+                if (byt != 0)
+                {
+                    ms.WriteByte(byt);
+                }
+                else
+                {
+                    break;
+                }
+
+                length--;
+            }
+
+            return ASCIIEncoding.Default.GetString(ms.ToArray());
+        }
+
     }
 }

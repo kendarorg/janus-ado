@@ -21,6 +21,7 @@ DbProviderFactory factory = PgwProviderFactory.Instance;
 DbConnection conn = factory.CreateConnection();
 conn.ConnectionString = "Host=localhost; Database=test;";
 conn.Open();
+conn.Close();
 
 /*
 

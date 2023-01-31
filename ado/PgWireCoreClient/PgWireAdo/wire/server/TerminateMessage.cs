@@ -12,8 +12,7 @@ namespace PgWireAdo.wire.server
     {
         public override void Write(ReadSeekableStream stream)
         {
-            //DO STUFF
-            throw new NotImplementedException();
+            stream.WriteByte((byte)'X');
         }
     }
 }

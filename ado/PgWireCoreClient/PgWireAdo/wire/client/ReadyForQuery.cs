@@ -12,12 +12,15 @@ namespace PgWireAdo.wire.client
     {
         public override bool IsMatching(ReadSeekableStream stream)
         {
-            throw new NotImplementedException();
+            return ReadData(stream, () =>
+                stream.ReadByte() == (byte)BackendMessageCode.ReadyForQuery);
         }
 
         public override void Read(ReadSeekableStream stream)
         {
-            throw new NotImplementedException();
+            stream.ReadByte();
+            stream.ReadInt32();
+            stream.ReadByte();
         }
     }
 }
