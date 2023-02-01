@@ -32,6 +32,11 @@
             <version>2.1.214</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.kendar</groupId>
+            <artifactId>typeconverter</artifactId>
+            <version>1.1.6</version>
+        </dependency>
     </dependencies>
 
     <properties>

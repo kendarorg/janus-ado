@@ -181,4 +181,48 @@ public class TestServer {
         }
         System.out.println(res.getCatalogs());
     }
+
+    @Test
+    void testRealTableDouble() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+
+
+        //conn.prepareStatement("create table test(id int)").execute();
+        PgWireFakeServer.setUseFakeResponse(false);
+        String url = POSTGRES_FAKE_CONNECTION_STRING;
+        Connection conn = DriverManager.getConnection(url);
+
+        conn.createStatement().execute("create table if not exists test(id int, val REAL)");
+        conn.createStatement().execute("insert into test values(1,1.72)");
+        conn.createStatement().execute("insert into test values(2,3.75)");
+        var ps = conn.prepareStatement("select * FROM test where val=?");
+        ps.setFloat(1,1.72F);
+        var result = ps.executeQuery();
+        while(result.next()){
+            System.out.println(result.getInt(1)+"-"+result.getFloat(2));
+        }
+
+        conn.createStatement().execute("drop table test");
+    }
+
+    @Test
+    void testRealTableLocalDate() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+
+
+        //conn.prepareStatement("create table test(id int)").execute();
+        PgWireFakeServer.setUseFakeResponse(false);
+        String url = POSTGRES_FAKE_CONNECTION_STRING;
+        Connection conn = DriverManager.getConnection(url);
+
+        conn.createStatement().execute("create table if not exists test(id int, val DATE)");
+        conn.createStatement().execute("insert into test values(1,'2020-12-25')");
+        conn.createStatement().execute("insert into test values(2,'2021-12-25')");
+        var ps = conn.prepareStatement("select * FROM test where val=?");
+        ps.setDate(1,Date.valueOf("2020-12-25"));
+        var result = ps.executeQuery();
+        while(result.next()){
+            System.out.println(result.getInt(1)+"-"+result.getDate(2));
+        }
+
+        conn.createStatement().execute("drop table test");
+    }
 }

@@ -9,11 +9,16 @@ import org.example.messages.querymessage.Field;
 import org.example.messages.querymessage.RowDescription;
 import org.example.server.Context;
 import org.example.server.TypesOids;
+import org.kendar.util.convert.TypeConverter;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.concurrent.Future;
 
 public class RealResultBuilder {
@@ -55,11 +60,29 @@ public class RealResultBuilder {
                 var bind = parseMessage.getBinds();
                 if(bind.getParameterValues().size()>0){
                     st = conn.prepareStatement(query);
+                    var pmd = ((PreparedStatement)st).getParameterMetaData();
                     for(var i=0;i<bind.getParameterValues().size();i++){
+                        var clName = pmd.getParameterClassName(i+1);
+                        var clPrec = pmd.getPrecision(i+1);
+                        var clScale = pmd.getScale(i+1);
+                        var sqlType = pmd.getParameterType(i+1);
+                        Class<?> clReal;
+                        try {
+                            clReal = Class.forName(clName);
+                        } catch (ClassNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
                         if(bind.getParamFormatCodes()[i]==0){
-                            ((PreparedStatement)st).setString(i+1,(String)bind.getParameterValues().get(i));
+                            ((PreparedStatement)st).setObject(i+1,
+                                    TypeConverter.convert(clReal,(String)bind.getParameterValues().get(i))
+                                    );
                         }else{
-                            ((PreparedStatement)st).setBytes(i+1,(byte[])bind.getParameterValues().get(i));
+
+
+                                Object converted = convert(clName,(byte[])bind.getParameterValues().get(i),clPrec,clScale);
+                                ((PreparedStatement)st).setObject(i+1,converted,sqlType,clScale);
+                                        //i+1,(byte[])bind.getParameterValues().get(i));
+
                         }
                     }
                     result = ((PreparedStatement) st).execute();
@@ -79,6 +102,8 @@ public class RealResultBuilder {
         CommandComplete commandComplete = new CommandComplete(query);
         return client.write(commandComplete);
     }
+
+
 
     private static void loadResultset(Context client, Statement st) throws SQLException {
         Future<Integer> writeResult;
@@ -190,7 +215,41 @@ public class RealResultBuilder {
             case Types.TIMESTAMP:return TypesOids.Timestamp;
             case Types.TIMESTAMP_WITH_TIMEZONE:return TypesOids.TimestampTz;
             case Types.TINYINT:return TypesOids.Int2;
+            case Types.SQLXML:return TypesOids.Varchar;
+            case Types.ROWID:return TypesOids.Int8;
         }
         throw new SQLException("NOT RECOGNIZED COLUMN TYPE "+columnType);
+    }
+
+    private static Object convert(String clName, byte[] o, int clPrec, int clScale) {
+        var ns = clName.split("\\.");
+        var name = ns[ns.length-1].toLowerCase(Locale.ROOT);
+        switch(name){
+            case("[b"):
+            case("[c"):
+                return o;
+            case("float"):
+                return ByteBuffer.wrap(o).getFloat();
+            case("double"):
+                return ByteBuffer.wrap(o).getDouble();
+            case("int"):
+                return ByteBuffer.wrap(o).getInt();
+            case("long"):
+                return ByteBuffer.wrap(o).getLong();
+            case("boolean"):
+            case("bool"):
+                return o[0]>0;
+            case("byte"):
+            case("char"):
+                return o[0];
+            case("bigdecimal"):
+                var intVal = new BigInteger(o);
+                return new BigDecimal(intVal, clScale, new MathContext(clPrec));
+            case("timestamp"):
+                //var intVal = new BigInteger(o);
+                //return new BigDecimal(intVal, clScale, new MathContext(clPrec));
+                return null;
+        }
+        return null;
     }
 }
