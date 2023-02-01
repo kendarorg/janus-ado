@@ -29,13 +29,13 @@ public class FakeResultBuilder {
         DataRow dataRow1 = new DataRow(List.of(
                 ByteBuffer.wrap("1".getBytes(StandardCharsets.UTF_8)),
                 ByteBuffer.wrap("one".getBytes(StandardCharsets.UTF_8))
-        ));
+        ), rowDescription.getFields());
         writeResult = client.write(dataRow1);
 
         DataRow dataRow2 = new DataRow(List.of(
                 ByteBuffer.wrap("2".getBytes(StandardCharsets.UTF_8)),
                 ByteBuffer.wrap("two".getBytes(StandardCharsets.UTF_8))
-        ));
+        ), rowDescription.getFields());
 
         writeResult = client.write(dataRow2);
 

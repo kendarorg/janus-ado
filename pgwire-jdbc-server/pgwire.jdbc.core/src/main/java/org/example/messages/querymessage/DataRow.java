@@ -3,14 +3,17 @@ package org.example.messages.querymessage;
 import org.example.messages.PGServerMessage;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DataRow implements PGServerMessage {
     private List<ByteBuffer> values;
+    private List<Field> fields;
 
-    public DataRow(List<ByteBuffer> values){
+    public DataRow(List<ByteBuffer> values, List<Field> fields){
 
         this.values = values;
+        this.fields = fields;
     }
 
     public List<ByteBuffer> getValues() {

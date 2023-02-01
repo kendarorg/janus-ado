@@ -36,6 +36,7 @@ public class QueryMessage implements PGClientMessage {
         var length = buffer.getInt(1);
         buffer.position(5);
         var query = PGClientMessage.extractStrings(buffer);
+        System.out.println(query.get(0));
         buffer.position(prev+length);
         return new QueryMessage(query.get(0));
     }

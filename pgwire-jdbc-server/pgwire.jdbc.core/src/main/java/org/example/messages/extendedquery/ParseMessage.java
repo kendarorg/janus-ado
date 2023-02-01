@@ -33,7 +33,7 @@ public class ParseMessage implements PGClientMessage {
         return oid;
     }
 
-    public ArrayList<BindMessage> getBinds() {
+    public BindMessage getBinds() {
         return binds;
     }
 
@@ -45,7 +45,7 @@ public class ParseMessage implements PGClientMessage {
     private short paramsCount;
     private int[] oid;
     private ByteBuffer buffer;
-    private ArrayList<BindMessage> binds;
+    private BindMessage binds;
     private ArrayList<DescribeMessage> describes;
 
     public ParseMessage(){
@@ -106,10 +106,9 @@ public class ParseMessage implements PGClientMessage {
             ParseCompleted parseCompleted = new ParseCompleted();
             writeResult = client.write(parseCompleted);
             BindMessage bind = new BindMessage();
-            binds = new ArrayList<BindMessage>();
-            while(bind.isMatching(buffer)) {
+            if(bind.isMatching(buffer)) {
                 System.out.println("[SERVER] ParseMessage-Received: BindMessage");
-                binds.add((BindMessage) bind.decode(buffer));
+                binds=(BindMessage) bind.decode(buffer);
 
             }
             BindCompleted bindCompleted = new BindCompleted();

@@ -51,8 +51,8 @@ public class RealResultBuilder {
 
             var result = false;
             Statement st = null;
-            if(parseMessage.getBinds()!=null && parseMessage.getBinds().size()>0){
-                var bind = parseMessage.getBinds().get(0);
+            if(parseMessage.getBinds()!=null ){
+                var bind = parseMessage.getBinds();
                 if(bind.getParameterValues().size()>0){
                     st = conn.prepareStatement(query);
                     for(var i=0;i<bind.getParameterValues().size();i++){
@@ -101,7 +101,7 @@ public class RealResultBuilder {
             for(var i=0;i<fields.size();i++){
                 byteRow.add(ByteBuffer.wrap(buildData(fields.get(i),rs,i+1)));
             }
-            DataRow dataRow = new DataRow(byteRow);
+            DataRow dataRow = new DataRow(byteRow,fields);
             writeResult = client.write(dataRow);
         }
     }
@@ -157,7 +157,7 @@ public class RealResultBuilder {
 
     private static byte[] buildData(Field field, ResultSet rs, int i) throws SQLException {
         var dt = field.getDataTypeObjectId();
-        if(dt==TypesOids.Bytea||dt==TypesOids.Varbit){
+        if(dt==TypesOids.Bytea||dt==TypesOids.Varbit||dt==TypesOids.BPChar||dt==TypesOids.Bool){
             return rs.getBytes(i);
         }
         return rs.getString(i).getBytes(StandardCharsets.UTF_8);

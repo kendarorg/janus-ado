@@ -24,6 +24,27 @@ conn.Open();
 var cmd = conn.CreateCommand();
 cmd.CommandText = "create table if not exists test(id int, name varchar)";
 cmd.ExecuteNonQuery();
+
+cmd = conn.CreateCommand();
+cmd.CommandText = "insert into test values(1,'fuffa')";
+cmd.ExecuteNonQuery();
+
+cmd = conn.CreateCommand();
+cmd.CommandText = "insert into test values(2,'boffa')";
+cmd.ExecuteNonQuery();
+
+cmd = conn.CreateCommand();
+cmd.CommandText = "select * FROM test";
+var reader = cmd.ExecuteReader();
+if (reader.HasRows)
+{
+    while (reader.Read())
+    {
+        Console.WriteLine("{0}\t{1}", reader.GetInt32(0),
+            reader.GetString(1));
+    }
+}
+
 conn.Close();
 
 Console.WriteLine("DONE!");
