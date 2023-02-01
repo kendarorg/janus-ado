@@ -34,29 +34,55 @@ public class PgwCommand : DbCommand
     {
         return new PgwParameter();
     }
-    public override void Cancel()
-    {
-        throw new NotImplementedException();
-    }
 
     public override int ExecuteNonQuery()
     {
         var stream = ((PgwConnection)DbConnection).Stream;
         CallQuery();
+        var result = 0;
         var commandComplete = new CommandComplete();
         if (commandComplete.IsMatching(stream))
         {
             commandComplete.Read(stream);
-            return commandComplete.Count;
+            result = commandComplete.Count;
+        }
+        var readyForQuery = new ReadyForQuery();
+        if (readyForQuery.IsMatching(stream))
+        {
+            readyForQuery.Read(stream);
         }
 
-        return 0;
+
+
+        return result;
     }
 
     public override object? ExecuteScalar()
     {
+        var stream = ((PgwConnection)DbConnection).Stream;
         CallQuery();
-        throw new NotImplementedException();
+        object result = null;
+        var dataRow = new PgwDataRow(_fields);
+        if (dataRow.IsMatching(stream))
+        {
+            dataRow.Read(stream);
+            if (dataRow.Data.Count > 0)
+            {
+                result = dataRow.Data[0];
+            }
+        }
+        var commandComplete = new CommandComplete();
+        if (commandComplete.IsMatching(stream))
+        {
+            commandComplete.Read(stream);
+            result = commandComplete.Count;
+        }
+        var readyForQuery = new ReadyForQuery();
+        if (readyForQuery.IsMatching(stream))
+        {
+            readyForQuery.Read(stream);
+        }
+        return result;
     }
 
     public override void Prepare()
@@ -67,8 +93,9 @@ public class PgwCommand : DbCommand
     protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
     {
         CallQuery();
-        throw new NotImplementedException();
+        return new PgwDataReader(DbConnection, CommandText, _fields);
     }
+
 
     private void CallQuery()
     {
@@ -84,11 +111,20 @@ public class PgwCommand : DbCommand
         }
 
         var rowDescription = new RowDescription();
+        var errorMessage = new ErrorResponse();
         if (rowDescription.IsMatching(stream))
         {
             rowDescription.Read(stream);
             _fields = rowDescription.Fields;
         }
+        if (errorMessage.IsMatching(stream))
+        {
+            errorMessage.Read(stream);
+        }
 
+    }
+    public override void Cancel()
+    {
+        throw new NotImplementedException();
     }
 }

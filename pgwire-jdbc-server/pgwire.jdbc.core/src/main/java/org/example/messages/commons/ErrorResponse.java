@@ -19,10 +19,10 @@ public class ErrorResponse implements PGServerMessage {
         var buffer = ByteBuffer.allocate(1+4+s.length+m.length+2+2);
         buffer.put((byte) 'E'); // 'Z' for ReadyForQuery
         buffer.putInt(4+s.length+m.length+2+2); // Length
-        buffer.put((byte) 'S'); // Transaction status indicator, 'I' for idle
+        buffer.put((byte) 'S'); // severity
         buffer.put( s);
         buffer.put((byte) 0);
-        buffer.put((byte) 'M'); // Transaction status indicator, 'I' for idle
+        buffer.put((byte) 'M'); // type
         buffer.put( m);
         buffer.put((byte) 0);
         buffer.flip();
