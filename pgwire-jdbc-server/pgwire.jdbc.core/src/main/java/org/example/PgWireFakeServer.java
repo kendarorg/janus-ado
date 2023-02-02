@@ -17,7 +17,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class PgWireFakeServer {
-    private static final String HOST = "localhost";
+    private static final String HOST = "*";
     private static final int PORT = 5432;
     private static AsynchronousServerSocketChannel sockServer;
 
@@ -39,7 +39,7 @@ public class PgWireFakeServer {
         AsynchronousChannelGroup group = AsynchronousChannelGroup.withThreadPool(executor);
 
         try (AsynchronousServerSocketChannel server = AsynchronousServerSocketChannel.open(group)) {
-            server.bind(new InetSocketAddress(HOST, PORT));
+            server.bind(new InetSocketAddress(PORT));
             sockServer = server;
             System.out.println("[SERVER] Listening on " + HOST + ":" + PORT);
 

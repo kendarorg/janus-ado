@@ -20,6 +20,13 @@ public class PgwCommand : DbCommand
         DbConnection = dbConnection;
     }
 
+    public PgwCommand(string commandText, DbConnection conn, DbTransaction dbTransaction = null)
+    {
+        CommandText = commandText;
+        DbConnection = conn;
+        DbTransaction = dbTransaction;
+    }
+
     public override string CommandText { get; set; }
     public override int CommandTimeout { get; set; }
     public override CommandType CommandType { get; set; }
@@ -57,6 +64,11 @@ public class PgwCommand : DbCommand
         return result;
     }
 
+    public override Task<int> ExecuteNonQueryAsync(CancellationToken cancellationToken)
+    {
+        return Task.Run(ExecuteNonQuery);
+    }
+
     public override object? ExecuteScalar()
     {
         var stream = ((PgwConnection)DbConnection).Stream;
@@ -68,6 +80,7 @@ public class PgwCommand : DbCommand
             dataRow.Read(stream);
             if (dataRow.Data.Count > 0)
             {
+                //TODO Conversions with fields
                 result = dataRow.Data[0];
             }
         }
@@ -83,6 +96,11 @@ public class PgwCommand : DbCommand
             readyForQuery.Read(stream);
         }
         return result;
+    }
+
+    public override async Task<object?> ExecuteScalarAsync(CancellationToken cancellationToken)
+    {
+        return await Task.Run(ExecuteScalar);
     }
 
     public override void Prepare()

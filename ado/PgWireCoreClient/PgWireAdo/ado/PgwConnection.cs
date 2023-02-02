@@ -37,6 +37,11 @@ public class PgwConnection : DbConnection
         startup.Write(_stream);
     }
 
+    public override Task OpenAsync(CancellationToken cancellationToken)
+    {
+        return Task.Run(Open);
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (_state != ConnectionState.Closed)
@@ -82,6 +87,18 @@ public class PgwConnection : DbConnection
         _client.Dispose();
 
     }
+
+
+    protected override DbCommand CreateDbCommand()
+    {
+        return new PgwCommand(this);
+    }
+
+    public override ValueTask DisposeAsync()
+    {
+        return new ValueTask(Task.Run(Dispose));
+    }
+
     #region TOIMPLEMENT
 
     protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
@@ -92,11 +109,6 @@ public class PgwConnection : DbConnection
     public override void ChangeDatabase(string databaseName)
     {
         throw new NotImplementedException();
-    }
-
-    protected override DbCommand CreateDbCommand()
-    {
-        return new PgwCommand(this);
     }
 
     #endregion
