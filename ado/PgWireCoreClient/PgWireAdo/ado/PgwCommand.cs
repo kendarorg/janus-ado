@@ -146,4 +146,14 @@ public class PgwCommand : DbCommand
     {
         throw new NotImplementedException();
     }
+
+    public new Task<DbDataReader> ExecuteReaderAsync()
+    {
+        return Task.Run(() => ExecuteDbDataReader(CommandBehavior.Default));
+    }
+
+    public new Task<DbDataReader> ExecuteReaderAsync(CommandBehavior commandBehavior)
+    {
+        return Task.Run(() => ExecuteDbDataReader(commandBehavior));
+    }
 }

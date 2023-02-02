@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Data.Common;
+using PgWireAdo.utils;
 using PgWireAdo.wire.client;
 
 namespace PgWireAdo.ado;
@@ -27,9 +28,9 @@ public class PgwDataReader :DbDataReader
 
     public override int FieldCount => _fields.Count;
 
-    public override object this[int ordinal] => throw new NotImplementedException();
+    public override object this[int ordinal] => PgwConverter.convert(_fields[ordinal],_currentRow[ordinal]);
 
-    public override object this[string name] => throw new NotImplementedException();
+    public override object this[string name] =>this[GetOrdinal(name)];
 
     public override int RecordsAffected { get; }
     public override bool HasRows
@@ -37,6 +38,8 @@ public class PgwDataReader :DbDataReader
         get { return true; }
     }
     public override bool IsClosed { get; }
+    
+
     public override int Depth { get; }
 
     public override bool GetBoolean(int ordinal)
@@ -180,6 +183,11 @@ public class PgwDataReader :DbDataReader
             return false;
         }
         return false;
+    }
+
+    public override Task<bool> ReadAsync(CancellationToken cancellationToken)
+    {
+        return Task.Run(Read, cancellationToken);
     }
 
 

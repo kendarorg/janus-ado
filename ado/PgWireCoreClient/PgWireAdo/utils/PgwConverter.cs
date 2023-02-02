@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using PgWireAdo.wire.client;
+﻿using PgWireAdo.wire.client;
 
 namespace PgWireAdo.utils
 {
