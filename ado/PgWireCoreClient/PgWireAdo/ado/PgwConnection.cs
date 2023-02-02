@@ -39,7 +39,8 @@ public class PgwConnection : DbConnection
 
     public override Task OpenAsync(CancellationToken cancellationToken)
     {
-        return Task.Run(Open);
+        Open();
+        return Task.CompletedTask;
     }
 
     protected override void Dispose(bool disposing)

@@ -149,7 +149,7 @@ public class PgwCommand : DbCommand
 
     public new Task<DbDataReader> ExecuteReaderAsync()
     {
-        return Task.Run(() => ExecuteDbDataReader(CommandBehavior.Default));
+        return ExecuteReaderAsync(CommandBehavior.Default);
     }
 
     public new Task<DbDataReader> ExecuteReaderAsync(CommandBehavior commandBehavior)
