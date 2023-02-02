@@ -6,10 +6,12 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.sql.*;
-import java.util.Calendar;
 import java.util.concurrent.ExecutionException;
 
-public class TestServer {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class BasicTest {
     public static final String POSTGRES_FAKE_CONNECTION_STRING = "jdbc:postgresql://localhost/test?" +
             "user=fred&" +
             "password=secret&" +
@@ -52,52 +54,9 @@ public class TestServer {
         PgWireFakeServer.stop();
     }
 
-    ///@Test
-    void simpleFakeQuery() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
-
-
-
-        PgWireFakeServer.setUseFakeResponse(true);
-        String url = POSTGRES_FAKE_CONNECTION_STRING;
-        Connection conn = DriverManager.getConnection(url);
-
-        conn.createStatement().execute("create table if not exists test  (id int)");
-        Statement st = conn.createStatement();
-        ResultSet rs = st.executeQuery("select 1;");
-        while (rs.next()) {
-            System.out.println("Data "+rs.getInt(1)+", "+rs.getString(2));
-        }
-        conn.createStatement().execute("drop table test");
-        rs.close();
-        st.close();
-    }
-
-
-
     @Test
-    void simpleParamsQuery() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+    void testSimple() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
 
-        PgWireFakeServer.setUseFakeResponse(true);
-
-        String url = POSTGRES_FAKE_CONNECTION_STRING;
-        Connection conn = DriverManager.getConnection(url);
-
-        PreparedStatement st = conn.prepareStatement("select * from people where firstname=?");
-        st.setString(1,"TEST");
-        ResultSet rs = st.executeQuery();
-        while (rs.next()) {
-            System.out.println("Data "+rs.getInt(1)+", "+rs.getString(2));
-        }
-        rs.close();
-        st.close();
-    }
-
-    @Test
-    void testRealTable() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
-
-
-        //conn.prepareStatement("create table test(id int)").execute();
-        PgWireFakeServer.setUseFakeResponse(false);
         String url = POSTGRES_FAKE_CONNECTION_STRING;
         Connection conn = DriverManager.getConnection(url);
 
@@ -105,19 +64,20 @@ public class TestServer {
         conn.createStatement().execute("insert into test values(1,'fuffa')");
         conn.createStatement().execute("insert into test values(2,'faffa')");
         var result = conn.createStatement().executeQuery("select * FROM test");
-        while(result.next()){
-            System.out.println(result.getInt(1)+"-"+result.getString(2));
-        }
+        assertTrue(result.next());
+        assertEquals(1,result.getInt(1));
+        assertEquals("fuffa",result.getString(2));
+        assertTrue(result.next());
+        assertEquals(2,result.getInt(1));
+        assertEquals("faffa",result.getString(2));
 
         conn.createStatement().execute("drop table test");
     }
 
     @Test
-    void testPerparedStatementTable() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+    void testPerparedStatement() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
 
 
-        //conn.prepareStatement("create table test(id int)").execute();
-        PgWireFakeServer.setUseFakeResponse(false);
         String url = POSTGRES_FAKE_CONNECTION_STRING;
         Connection conn = DriverManager.getConnection(url);
 
@@ -140,7 +100,6 @@ public class TestServer {
     void testCall() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
 
         //conn.prepareStatement("create table test(id int)").execute();
-        PgWireFakeServer.setUseFakeResponse(false);
         String url = POSTGRES_FAKE_CONNECTION_STRING;
         Connection conn = DriverManager.getConnection(url);
 
@@ -154,9 +113,8 @@ public class TestServer {
         conn.createStatement().execute(sp);
         var ps = conn.prepareCall("CALL IP_ADDRESS()");
         var result = ps.executeQuery();
-        while(result.next()){
-            System.out.println(result.getString(1));
-        }
+        assertTrue(result.next());
+        assertEquals("TEST",result.getString(1));
 
         conn.createStatement().execute("drop ALIAS IP_ADDRESS");
     }
@@ -164,7 +122,6 @@ public class TestServer {
 
     void getDbMetadata() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
 
-        PgWireFakeServer.setUseFakeResponse(false);
 
         String url = POSTGRES_FAKE_CONNECTION_STRING;
         Connection conn = DriverManager.getConnection(url);
@@ -183,11 +140,10 @@ public class TestServer {
     }
 
     @Test
-    void testRealTableDouble() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+    void testDouble() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
 
 
         //conn.prepareStatement("create table test(id int)").execute();
-        PgWireFakeServer.setUseFakeResponse(false);
         String url = POSTGRES_FAKE_CONNECTION_STRING;
         Connection conn = DriverManager.getConnection(url);
 
@@ -197,19 +153,18 @@ public class TestServer {
         var ps = conn.prepareStatement("select * FROM test where val=?");
         ps.setFloat(1,1.72F);
         var result = ps.executeQuery();
-        while(result.next()){
-            System.out.println(result.getInt(1)+"-"+result.getFloat(2));
-        }
+        assertTrue(result.next());
+        assertEquals(1,result.getInt(1));
+        assertEquals(1.72F,result.getFloat(2));
 
         conn.createStatement().execute("drop table test");
     }
 
     @Test
-    void testRealTableLocalDate() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+    void testDate() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
 
 
         //conn.prepareStatement("create table test(id int)").execute();
-        PgWireFakeServer.setUseFakeResponse(false);
         String url = POSTGRES_FAKE_CONNECTION_STRING;
         Connection conn = DriverManager.getConnection(url);
 
@@ -219,9 +174,9 @@ public class TestServer {
         var ps = conn.prepareStatement("select * FROM test where val=?");
         ps.setDate(1,Date.valueOf("2020-12-25"));
         var result = ps.executeQuery();
-        while(result.next()){
-            System.out.println(result.getInt(1)+"-"+result.getDate(2));
-        }
+        assertTrue(result.next());
+        assertEquals(1,result.getInt(1));
+        assertEquals("2020-12-25",result.getDate(2).toString());
 
         conn.createStatement().execute("drop table test");
     }

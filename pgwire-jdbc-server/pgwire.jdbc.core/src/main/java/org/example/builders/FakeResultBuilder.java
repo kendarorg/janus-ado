@@ -19,8 +19,8 @@ public class FakeResultBuilder {
         // Let's assume it's a query message, and just send a simple response
         // First we send a RowDescription. We'll send two columns, with names "id" and "name"
         RowDescription rowDescription = new RowDescription(List.of(
-                new Field("id", 0, 0, TypesOids.Int4, 4, -1, 0),
-                new Field("name", 0, 0, TypesOids.Text, -1, -1, 0)
+                //new Field("id", 0, 0, TypesOids.Int4, 4, -1, 0,),
+                //new Field("name", 0, 0, TypesOids.Text, -1, -1, 0)
         ));
         writeResult = client.write(rowDescription);
 

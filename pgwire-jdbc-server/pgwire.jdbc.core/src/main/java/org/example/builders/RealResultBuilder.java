@@ -11,14 +11,10 @@ import org.example.server.Context;
 import org.example.server.TypesOids;
 import org.kendar.util.convert.TypeConverter;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.concurrent.Future;
 
 public class RealResultBuilder {
@@ -69,21 +65,17 @@ public class RealResultBuilder {
                         Class<?> clReal;
                         try {
                             clReal = Class.forName(clName);
-                        } catch (ClassNotFoundException e) {
+                            ((PreparedStatement)st).setObject(i+1,
+                                    PgwConverter.toPgWire(
+                                            bind.getParamFormatCodes()[i],
+                                            clReal,
+                                            bind.getParameterValues().get(i),
+                                            clPrec,clScale),
+                                    sqlType,clScale);
+                        } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
-                        if(bind.getParamFormatCodes()[i]==0){
-                            ((PreparedStatement)st).setObject(i+1,
-                                    TypeConverter.convert(clReal,(String)bind.getParameterValues().get(i))
-                                    );
-                        }else{
 
-
-                                Object converted = convert(clName,(byte[])bind.getParameterValues().get(i),clPrec,clScale);
-                                ((PreparedStatement)st).setObject(i+1,converted,sqlType,clScale);
-                                        //i+1,(byte[])bind.getParameterValues().get(i));
-
-                        }
                     }
                     result = ((PreparedStatement) st).execute();
                 }
@@ -115,8 +107,9 @@ public class RealResultBuilder {
             fields.add(new Field(
                     md.getColumnName(i+1),
                     0,
-                    0, convertType(md.getColumnType(i+1))
-                    , md.getPrecision(i+1), -1, 0));
+                    0, PgwConverter.toPgwType(md.getColumnType(i+1))
+                    , md.getPrecision(i+1), -1, PgwConverter.isByteOut(md.getColumnClassName(i+1))?1:0
+                    ,md.getColumnClassName(i+1),md.getScale(i+1),md.getColumnType(i+1)));
         }
 
         RowDescription rowDescription = new RowDescription(fields);
@@ -124,11 +117,24 @@ public class RealResultBuilder {
         while(rs.next()){
             var byteRow = new ArrayList<ByteBuffer>();
             for(var i=0;i<fields.size();i++){
-                byteRow.add(ByteBuffer.wrap(buildData(fields.get(i),rs,i+1)));
+                byteRow.add(buildData(fields.get(i),rs,i+1));
             }
             DataRow dataRow = new DataRow(byteRow,fields);
             writeResult = client.write(dataRow);
         }
+    }
+
+    private static ByteBuffer buildData(Field field, ResultSet rs, int i) throws SQLException {
+        return PgwConverter.toBytes(field,rs,i);
+        /*try {
+            if (PgwConverter.isByte(field.getColumnClassName())) {
+                return rs.getBytes(i);
+            } else {
+                return rs.getString(i).getBytes(StandardCharsets.UTF_8);
+            }
+        }catch (Exception ex){
+            throw new SQLException(ex);
+        }*/
     }
 
     private static Future<Integer> handleSpecialQuery(Connection conn, String query, Context client) throws SQLException {
@@ -180,76 +186,7 @@ public class RealResultBuilder {
         return svp;
     }
 
-    private static byte[] buildData(Field field, ResultSet rs, int i) throws SQLException {
-        var dt = field.getDataTypeObjectId();
-        if(dt==TypesOids.Bytea||dt==TypesOids.Varbit||dt==TypesOids.BPChar||dt==TypesOids.Bool){
-            return rs.getBytes(i);
-        }
-        return rs.getString(i).getBytes(StandardCharsets.UTF_8);
-    }
 
-    private static int convertType(int columnType) throws SQLException {
-        switch(columnType){
-            case Types.BIGINT:return TypesOids.Int8;
-            case Types.ARRAY:return TypesOids.TsVector;
-            case Types.BIT:return TypesOids.Bool;
-            case Types.BINARY:return TypesOids.Bytea;
-            case Types.BLOB:return TypesOids.Varbit;
-            case Types.CHAR:return TypesOids.BPChar;
-            case Types.CLOB:return TypesOids.Varchar;
-            case Types.DATE:return TypesOids.Date;
-            case Types.DECIMAL:return TypesOids.Numeric;
-            case Types.DOUBLE:return TypesOids.Float8;
-            case Types.INTEGER:return TypesOids.Int4;
-            case Types.LONGNVARCHAR:return TypesOids.Varchar;
-            case Types.LONGVARBINARY:return TypesOids.Varbit;
-            case Types.VARCHAR:return TypesOids.Varchar;
-            case Types.VARBINARY:return TypesOids.Varbit;
-            case Types.NCHAR:return TypesOids.Varchar;
-            case Types.NCLOB:return TypesOids.Varchar;
-            case Types.NUMERIC:return TypesOids.Numeric;
-            case Types.REAL:return TypesOids.Numeric;
-            case Types.SMALLINT:return TypesOids.Int2;
-            case Types.TIME:return TypesOids.Time;
-            case Types.TIME_WITH_TIMEZONE:return TypesOids.TimeTz;
-            case Types.TIMESTAMP:return TypesOids.Timestamp;
-            case Types.TIMESTAMP_WITH_TIMEZONE:return TypesOids.TimestampTz;
-            case Types.TINYINT:return TypesOids.Int2;
-            case Types.SQLXML:return TypesOids.Varchar;
-            case Types.ROWID:return TypesOids.Int8;
-        }
-        throw new SQLException("NOT RECOGNIZED COLUMN TYPE "+columnType);
-    }
 
-    private static Object convert(String clName, byte[] o, int clPrec, int clScale) {
-        var ns = clName.split("\\.");
-        var name = ns[ns.length-1].toLowerCase(Locale.ROOT);
-        switch(name){
-            case("[b"):
-            case("[c"):
-                return o;
-            case("float"):
-                return ByteBuffer.wrap(o).getFloat();
-            case("double"):
-                return ByteBuffer.wrap(o).getDouble();
-            case("int"):
-                return ByteBuffer.wrap(o).getInt();
-            case("long"):
-                return ByteBuffer.wrap(o).getLong();
-            case("boolean"):
-            case("bool"):
-                return o[0]>0;
-            case("byte"):
-            case("char"):
-                return o[0];
-            case("bigdecimal"):
-                var intVal = new BigInteger(o);
-                return new BigDecimal(intVal, clScale, new MathContext(clPrec));
-            case("timestamp"):
-                //var intVal = new BigInteger(o);
-                //return new BigDecimal(intVal, clScale, new MathContext(clPrec));
-                return null;
-        }
-        return null;
-    }
+
 }

@@ -1,7 +1,5 @@
 package org.example.messages;
 
-import org.example.builders.FakeResultBuilder;
-import org.example.PgWireFakeServer;
 import org.example.builders.RealResultBuilder;
 import org.example.messages.extendedquery.ParseMessage;
 import org.example.server.Context;
@@ -45,9 +43,7 @@ public class ExecuteMessage implements PGClientMessage {
     @Override
     public void handle(Context client) {
         Future<Integer> writeResult = null;
-        if (PgWireFakeServer.isUseFakeResponse()) {
-            writeResult = FakeResultBuilder.buildFakeResult(client);
-        } else {
+        {
             var msg = client.get((o) -> {
                 if (o instanceof ParseMessage) {
                     if (((ParseMessage) o).getPsName().equalsIgnoreCase(portal)) {

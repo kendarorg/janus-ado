@@ -62,10 +62,9 @@ public class BindMessage implements PGClientMessage {
         if(parameterValuesThatFollow>0){
             for(var i=0;i<parameterValuesThatFollow;i++) {
                 var parameterLength = buffer.getInt();
-                var isString = paramFormatCodes[i]==0;
-                var dst = new byte[parameterLength+(isString?1:0)];
-                var j=0;
-                for (; j < parameterLength; j++) {
+                var dst = new byte[parameterLength];
+
+                for (var j=0; j < parameterLength; j++) {
                     dst[j] = buffer.get();
                 }
                 if(paramFormatCodes[i]==0) {

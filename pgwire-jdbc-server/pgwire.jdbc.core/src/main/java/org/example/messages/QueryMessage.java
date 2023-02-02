@@ -1,6 +1,5 @@
 package org.example.messages;
 
-import org.example.builders.FakeResultBuilder;
 import org.example.PgWireFakeServer;
 import org.example.builders.RealResultBuilder;
 import org.example.messages.commons.ReadyForQuery;
@@ -56,11 +55,7 @@ public class QueryMessage implements PGClientMessage {
 
         // Let's assume it's a query message, and just send a simple response
         // First we send a RowDescription. We'll send two columns, with names "id" and "name"
-        if(PgWireFakeServer.isUseFakeResponse()) {
-            writeResult = FakeResultBuilder.buildFakeResult(client);
-        }else{
-            writeResult = RealResultBuilder.buildRealResult(this,client);
-        }
+        writeResult = RealResultBuilder.buildRealResult(this,client);
 
         // Finally, write ReadyForQuery
         ReadyForQuery readyForQuery = new ReadyForQuery();

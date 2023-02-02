@@ -29,15 +29,6 @@ public class PgWireFakeServer {
         sockServer.close();
     }
 
-    public static void setUseFakeResponse(boolean useFakeResponse) {
-        PgWireFakeServer.useFakeResponse = useFakeResponse;
-    }
-
-    public static boolean isUseFakeResponse() {
-        return useFakeResponse;
-    }
-
-    static boolean useFakeResponse=false;
 
     public static void start(Supplier<Connection> conn) throws IOException, InterruptedException, ExecutionException {
         start(conn,2000);

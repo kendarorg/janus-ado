@@ -22,7 +22,7 @@ public class Field {
     }
 
     public int getDataTypeSize() {
-        return dataTypeSize;
+        return precision;
     }
 
     public int getTypeModifier() {
@@ -34,26 +34,52 @@ public class Field {
     }
 
     private final int dataTypeObjectId;
-    private final int dataTypeSize;
+    private final int precision;
     private final int typeModifier;
     private final int formatCode;
+
+    public int getPrecision() {
+        return precision;
+    }
+
+    public String getColumnClassName() {
+        return columnClassName;
+    }
+
+    public int getScale() {
+        return scale;
+    }
+
+    public int getSqlType() {
+        return sqlType;
+    }
+
+    private String columnClassName;
+    private int scale;
+    private int sqlType;
 
     public Field(
             String name,
             int tableObjectId,
             int columnAttributeNumber,
             int dataTypeObjectId,
-            int dataTypeSize,
+            int precision,
             int typeModifier,
-            int formatCode){
+            int formatCode,
+            String columnClassName,
+            int scale,int sqlType
+            ){
 
         this.name = name;
         this.tableObjectId = tableObjectId;
         this.columnAttributeNumber = columnAttributeNumber;
         this.dataTypeObjectId = dataTypeObjectId;
-        this.dataTypeSize = dataTypeSize;
+        this.precision = precision;
         this.typeModifier = typeModifier;
         this.formatCode = formatCode;
+        this.columnClassName = columnClassName;
+        this.scale = scale;
+        this.sqlType = sqlType;
     }
 
     public int length() {
