@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PgWireAdo.utils;
 using PgWireAdo.wire.client;
 using PgWireAdo.wire.server;
 
@@ -80,8 +81,8 @@ public class PgwCommand : DbCommand
             dataRow.Read(stream);
             if (dataRow.Data.Count > 0)
             {
-                //TODO Conversions with fields
-                result = dataRow.Data[0];
+                var field = _fields[0];
+                result = PgwConverter.convert(field,dataRow.Data[0]);
             }
         }
         var commandComplete = new CommandComplete();

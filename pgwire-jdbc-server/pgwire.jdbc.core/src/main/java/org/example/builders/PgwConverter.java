@@ -29,20 +29,7 @@ public class PgwConverter {
         }
     }
 
-    public static boolean isByteOut(String clName){
-        var ns = clName.split("\\.");
-        var name = ns[ns.length-1].toLowerCase(Locale.ROOT);
-        switch(name){
-            case("[b"):
-            case("[c"):
-            case("byte"):
-            case("char"):
-            case("timestamp"):
-                return true;
-            default:
-                return false;
-        }
-    }
+
 
     public static boolean isByteIn(String clName){
         var ns = clName.split("\\.");
@@ -131,6 +118,20 @@ public class PgwConverter {
     }
 
 
+    public static boolean isByteOut(String clName){
+        var ns = clName.split("\\.");
+        var name = ns[ns.length-1].toLowerCase(Locale.ROOT);
+        switch(name){
+            case("[b"):
+            case("[c"):
+            case("byte"):
+            case("char"):
+            case("timestamp"):
+                return true;
+            default:
+                return false;
+        }
+    }
     public static ByteBuffer toBytes(Field field, ResultSet rs, int i) throws SQLException {
         if(!isByteOut(field.getColumnClassName())){
             return ByteBuffer.wrap(rs.getString(i).getBytes(StandardCharsets.UTF_8));
