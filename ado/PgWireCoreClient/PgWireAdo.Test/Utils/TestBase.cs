@@ -30,7 +30,7 @@ namespace PgWireAdo.Test.Utils
             _process = new Process();
             var startInfo = new ProcessStartInfo();
             startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            startInfo.FileName = Path.Combine(javaHome, "bin", "java.exe");
+            startInfo.FileName = Path.Combine(javaHome, "bin", "java");
             startInfo.Arguments = "-jar " + jarFile;
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;

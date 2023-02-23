@@ -2,6 +2,11 @@
 <project version="4">
   <component name="RemoteRepositoriesConfiguration">
     <remote-repository>
+      <option name="id" value="kendar" />
+      <option name="name" value="Kendar Repository" />
+      <option name="url" value="https://maven.kendar.org/maven2/releases" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="central" />
       <option name="name" value="Central Repository" />
       <option name="url" value="https://repo.maven.apache.org/maven2" />
@@ -30,6 +35,11 @@
       <option name="id" value="central2" />
       <option name="name" value="Central Repository2" />
       <option name="url" value="https://repo.maven.apache.org/maven2" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="kendar2" />
+      <option name="name" value="Kendar Repository2" />
+      <option name="url" value="https://maven.kendar.org/maven2/snapshots" />
     </remote-repository>
   </component>
 </project>
