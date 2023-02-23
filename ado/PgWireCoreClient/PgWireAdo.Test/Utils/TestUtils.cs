@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Text;
@@ -45,4 +46,47 @@ CREATE TABLE {tableName} ({columns});");
         }
     }
 
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+public class IssueLink : Attribute
+{
+    public string LinkAddress { get; private set; }
+    public IssueLink(string linkAddress)
+    {
+        LinkAddress = linkAddress;
+    }
+}
+
+public class NpgsqlParameter:PgwParameter{
+public NpgsqlParameter(string parameterName, DbType dbType)
+        {
+            this.ParameterName = parameterName;
+            this.DbType = dbType;
+        }
+
+        public NpgsqlParameter()
+        {
+            
+        }
+}
+
+    public class NpgsqlParameter<T> : PgwParameter<T>
+    {
+        public NpgsqlParameter(string parameterName, T? value) : base(parameterName, value)
+        {
+            this.ParameterName = parameterName;
+            this.Value = value;
+        }
+    }
+
+    public enum PrepareOrNot
+{
+    Prepared,
+    NotPrepared
+}
+
+public enum PooledOrNot
+{
+    Pooled,
+    Unpooled
+}
 }

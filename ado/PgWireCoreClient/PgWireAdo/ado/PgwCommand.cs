@@ -21,6 +21,10 @@ public class PgwCommand : DbCommand
         DbConnection = dbConnection;
     }
 
+    public PgwCommand()
+    {
+    }
+
     public PgwCommand(string commandText, DbConnection conn, DbTransaction dbTransaction = null)
     {
         CommandText = commandText;

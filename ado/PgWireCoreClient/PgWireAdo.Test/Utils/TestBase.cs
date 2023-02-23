@@ -15,6 +15,8 @@ namespace PgWireAdo.Test.Utils
         private Process _process;
         private bool _startServer = true;
 
+        public bool IsMultiplexing {get{ return false;}}
+
         protected void TbRunBeforeAnyTests()
         {
             if (!_startServer) return;
@@ -94,6 +96,9 @@ namespace PgWireAdo.Test.Utils
                 throw;
             }
         }
+
+        protected static PgwCommand CreateSleepCommand(DbConnection conn, int seconds = 1000)
+        => new($"SELECT 1=1", conn);
 
         static Task OpenConnection(DbConnection conn, bool async)
         {

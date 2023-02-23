@@ -5,11 +5,32 @@ using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PgWireAdo.utils;
 
 namespace PgWireAdo.ado
 {
+    public class PgwParameter<T>:PgwParameter
+    {
+        public PgwParameter(string parameterName,T? value)
+        {
+            this.ParameterName = parameterName;
+            this.Value = value;
+        }
+
+    }
     public class PgwParameter:DbParameter
     {
+
+        public PgwParameter(string parameterName, DbType dbType)
+        {
+            this.ParameterName = parameterName;
+            this.DbType = dbType;
+        }
+
+        public PgwParameter()
+        {
+            
+        }
 
         public override DbType DbType { get; set; }
         public override ParameterDirection Direction { get; set; }

@@ -4,6 +4,8 @@ namespace PgWireAdo.utils
 {
     public enum TypesOids :int
     {
+        Integer = 20,
+
         Int8 = 20,
         Float8 = 701,
         Int4 = 23,
