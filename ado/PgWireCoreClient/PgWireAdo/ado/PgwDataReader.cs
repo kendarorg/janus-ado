@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Data;
 using System.Data.Common;
 using PgWireAdo.utils;
 using PgWireAdo.wire.client;
@@ -17,13 +18,16 @@ public class PgwDataReader :DbDataReader
 
     private readonly string _commandText;
     private readonly List<RowDescriptor> _fields;
+    private CommandBehavior _behavior = CommandBehavior.Default;
     private List<object> _currentRow;
 
-    public PgwDataReader(DbConnection dbConnection, string commandText, List<RowDescriptor> fields)
+    public PgwDataReader(DbConnection dbConnection, string commandText, List<RowDescriptor> fields,
+        CommandBehavior behavior=CommandBehavior.Default)
     {
         _dbConnection = dbConnection;
         _commandText = commandText;
         _fields = fields;
+        _behavior = behavior;
     }
 
     public override int FieldCount => _fields.Count;
@@ -180,7 +184,15 @@ public class PgwDataReader :DbDataReader
         else if (commandComplete.IsMatching(stream))
         {
             commandComplete.Read(stream);
+            if (_behavior == CommandBehavior.CloseConnection)
+            {
+                DbConnection.Close();
+            }
             return false;
+        }
+        if (_behavior == CommandBehavior.CloseConnection)
+        {
+            DbConnection.Close();
         }
         return false;
     }
@@ -225,4 +237,5 @@ public class PgwDataReader :DbDataReader
         }
         throw new NotImplementedException();
     }
+    
 }

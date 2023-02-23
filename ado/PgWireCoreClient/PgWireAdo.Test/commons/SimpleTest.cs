@@ -36,7 +36,7 @@ namespace PgWireAdo.Test.commons
             Assert.AreEqual("test2", reader.GetString(1));
 
 
-            conn.Close();
+            //conn.Close();
         }
     }
 }

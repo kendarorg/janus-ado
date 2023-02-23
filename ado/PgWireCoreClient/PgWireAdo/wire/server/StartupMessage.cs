@@ -49,6 +49,7 @@ namespace PgWireAdo.wire.server
 
             //SEND THE MESSAGE PLUS PARAMETERS
             var authenticationOk = new AuthenticationOk();
+
             if (authenticationOk.IsMatching(stream))
             {
                 authenticationOk.Read(stream);
@@ -71,7 +72,7 @@ namespace PgWireAdo.wire.server
                     }
                 }
             }
-            throw new Exception("[ERROR] StartupMessage");
+            throw new InvalidOperationException("[ERROR] StartupMessage");
         }
     }
 }

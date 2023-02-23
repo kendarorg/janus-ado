@@ -23,9 +23,10 @@ public class PgwCommand : DbCommand
 
     public PgwCommand()
     {
+        DbParameterCollection = new PgwParameterCollection();
     }
 
-    public PgwCommand(string commandText, DbConnection conn, DbTransaction dbTransaction = null)
+    public PgwCommand(string commandText, DbConnection conn = null, DbTransaction dbTransaction = null)
     {
         CommandText = commandText;
         DbConnection = conn;
@@ -76,6 +77,7 @@ public class PgwCommand : DbCommand
 
     public override object? ExecuteScalar()
     {
+        if (DbConnection == null) throw new InvalidOperationException("Missing connection");
         var stream = ((PgwConnection)DbConnection).Stream;
         CallQuery();
         object result = null;
@@ -116,7 +118,8 @@ public class PgwCommand : DbCommand
     protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
     {
         CallQuery();
-        return new PgwDataReader(DbConnection, CommandText, _fields);
+        var result = new PgwDataReader(DbConnection, CommandText, _fields,behavior);
+        return result;
     }
 
 
@@ -160,4 +163,6 @@ public class PgwCommand : DbCommand
     {
         return Task.Run(() => ExecuteDbDataReader(commandBehavior));
     }
+
+    
 }

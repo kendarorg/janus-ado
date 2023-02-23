@@ -1,11 +1,12 @@
 ﻿using PgWireAdo.Test.Utils;
 using System.Data;
 using PgWireAdo.ado;
+using PgWireAdo.utils;
 using static PgWireAdo.Test.Utils.TestUtils;
 
-namespace PgWireAdo.Test
-{
-    public class AsyncTests:TestBase
+namespace Npgsql.Tests;
+
+public class AsyncTests:TestBase
     {
         [Test]
         public async Task NonQuery()
@@ -49,4 +50,4 @@ namespace PgWireAdo.Test
             Assert.That(await reader.GetFieldValueAsync<string>(2), Is.EqualTo("Some Text"));
         }
     }
-}
+

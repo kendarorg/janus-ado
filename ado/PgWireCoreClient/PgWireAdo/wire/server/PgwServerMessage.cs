@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
+using PgWireAdo.ado;
 
 namespace PgWireAdo.wire.server
 {
@@ -34,8 +35,15 @@ namespace PgWireAdo.wire.server
 
         protected void Flush(Stream stream)
         {
-            stream.Write(toSend.ToArray());
-            stream.Flush();
+            try
+            {
+                stream.Write(toSend.ToArray());
+                stream.Flush();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("ERROR", ex);
+            }
         }
 
         protected void Write(byte[] stream)

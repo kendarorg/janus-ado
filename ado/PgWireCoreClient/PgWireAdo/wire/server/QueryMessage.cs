@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using PgWireAdo.utils;
@@ -17,6 +18,7 @@ namespace PgWireAdo.wire.server
         }
         public override void Write(ReadSeekableStream stream)
         {
+            if (_query == null) throw new InvalidOperationException("Missing query");
             int length = 1 + 4 + _query.Length+1;
             WriteByte((byte)'Q');
             WriteInt32(length);

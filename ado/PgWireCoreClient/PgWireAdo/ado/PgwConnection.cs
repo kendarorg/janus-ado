@@ -22,7 +22,15 @@ public class PgwConnection : DbConnection
     private TcpClient _client;
     private ReadSeekableStream _stream;
 
+    public PgwConnection(string connectionString)
+    {
+        _connectionString = connectionString;
+    }
 
+    public PgwConnection()
+    {
+        
+    }
 
     public override void Open()
     {
@@ -102,6 +110,7 @@ public class PgwConnection : DbConnection
 
     #region TOIMPLEMENT
 
+    
     protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
     {
         throw new NotImplementedException();

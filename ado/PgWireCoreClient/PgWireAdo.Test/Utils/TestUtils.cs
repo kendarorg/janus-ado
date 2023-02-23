@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using PgWireAdo.ado;
+using PgWireAdo.utils;
 
 namespace PgWireAdo.Test.Utils
 {
@@ -13,12 +14,7 @@ namespace PgWireAdo.Test.Utils
     {
 
         private static int _tempTableCounter = 0;
-        public static async Task<int> ExecuteNonQueryAsync(
-            this PgwConnection conn, string sql, DbTransaction? tx = null, CancellationToken cancellationToken = default)
-        {
-            await using var command = tx == null ? new PgwCommand(sql, conn) : new PgwCommand(sql, conn, tx);
-            return await command.ExecuteNonQueryAsync(cancellationToken);
-        }
+
 
         public static async Task<string> CreateTempTable(DbConnection conn, string columns)
         {
@@ -31,19 +27,9 @@ CREATE TABLE {tableName} ({columns});");
             return tableName;
         }
 
-        public static async Task<int> ExecuteNonQueryAsync(
-            this DbConnection conn, string sql, DbTransaction? tx = null, CancellationToken cancellationToken = default)
-        {
-            await using var command = tx == null ? new PgwCommand(sql, conn) : new PgwCommand(sql, conn, tx);
-            return await command.ExecuteNonQueryAsync(cancellationToken);
-        }
+       
 
-        public static async Task<object?> ExecuteScalarAsync(
-            this DbConnection conn, string sql, DbTransaction? tx = null, CancellationToken cancellationToken = default)
-        {
-            await using var command = tx == null ? new PgwCommand(sql, conn) : new PgwCommand(sql, conn, tx);
-            return await command.ExecuteScalarAsync(cancellationToken);
-        }
+        
     }
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
@@ -57,10 +43,14 @@ public class IssueLink : Attribute
 }
 
 public class NpgsqlParameter:PgwParameter{
-public NpgsqlParameter(string parameterName, DbType dbType)
+        public NpgsqlParameter(string parameterName, Object? dbType)
         {
             this.ParameterName = parameterName;
-            this.DbType = dbType;
+            if (dbType != null)
+            {
+                if (typeof(DbType) == dbType.GetType()) DbType = (DbType)dbType;
+                else Value = dbType;
+            }
         }
 
         public NpgsqlParameter()

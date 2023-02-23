@@ -12,8 +12,43 @@ namespace PgWireAdo.Test.Utils
 {
     public class TestBase
     {
+        [TearDown]
+        public void Cleanup()
+        {
+            if (_connection == null) return;
+            _connection.Close();
+        }
+
         private Process _process;
         private bool _startServer = true;
+        private DbConnection _connection;
+
+        public int WriteBufferSize
+        {
+            get { return 256; }
+        }
+
+        public String ConnectionString
+        {
+            get { return "Host=localhost; Database=test;"; }
+        }
+
+        protected virtual PgwDataSource CreateDataSource()
+        {
+            return CreateDataSource(ConnectionString);
+        }
+
+        protected virtual PgwDataSource CreateDataSource(string connectionString)
+            => PgwDataSource.Create(connectionString);
+
+        protected virtual PgwDataSource CreateDataSource(Action<PgwConnectionStringBuilder> connectionStringBuilderAction)
+        {
+            var connectionStringBuilder = new PgwConnectionStringBuilder(ConnectionString);
+            connectionStringBuilderAction(connectionStringBuilder);
+            return PgwDataSource.Create(connectionStringBuilder.ConnectionString);
+        }
+
+
 
         public bool IsMultiplexing {get{ return false;}}
 
@@ -61,15 +96,15 @@ namespace PgWireAdo.Test.Utils
 
         protected virtual DbConnection OpenConnection()
         {
-            var connection = CreateConnection();
+            var _connection = CreateConnection();
             try
             {
-                OpenConnection(connection, async: false).GetAwaiter().GetResult();
-                return connection;
+                OpenConnection(_connection, async: false).GetAwaiter().GetResult();
+                return _connection;
             }
             catch
             {
-                connection.Dispose();
+                _connection.Dispose();
                 throw;
             }
         }
@@ -98,7 +133,7 @@ namespace PgWireAdo.Test.Utils
         }
 
         protected static PgwCommand CreateSleepCommand(DbConnection conn, int seconds = 1000)
-        => new($"SELECT 1=1", conn);
+        => new($"SELECT pg_sleep({seconds})", conn);
 
         static Task OpenConnection(DbConnection conn, bool async)
         {

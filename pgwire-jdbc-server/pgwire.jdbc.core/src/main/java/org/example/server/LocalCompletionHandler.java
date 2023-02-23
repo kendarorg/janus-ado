@@ -13,9 +13,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -23,16 +21,14 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
 
 
     private AsynchronousSocketChannel client;
-    private AsynchronousServerSocketChannel sockServer;
     private Connection conn;
     private int maxTimeout;
     private  Queue<Object> storage=new LinkedBlockingQueue<>();
 
-    public LocalCompletionHandler(AsynchronousSocketChannel client, AsynchronousServerSocketChannel sockServer,
+    public LocalCompletionHandler(AsynchronousSocketChannel client,
                                   Supplier<Connection> conn,int maxTimeout) {
 
         this.client = client;
-        this.sockServer = sockServer;
         this.conn = conn.get();
         this.maxTimeout = maxTimeout;
     }
@@ -99,18 +95,19 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
             }
             if(shouldCloseConnection){
                 try {
-                    client.close();
+
+                    client.shutdownOutput();
                 } catch (Exception ex) {
 
                 }
             }else if(matchingCount>0){
                 return;
             }else{
-                System.out.println("[SERVER] ERROR: " + buffer);
+                System.out.println("[SERVER] ERROR 01: " + buffer);
             }
         }catch (Exception ex){
 
-            System.out.println("[SERVER] ERROR: " + ex.getMessage());
+            System.out.println("[SERVER] ERROR 02: " + ex.getMessage());
             try {
                 client.close();
             } catch (IOException e) {
@@ -122,10 +119,24 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
 
     }
 
+    private List<ByteBuffer> buffers = new ArrayList<>();
+
     @Override
     public Future<Integer> write(PGServerMessage message) {
         System.out.println("[SERVER] Sent: "+ message.getClass().getSimpleName());
-        return client.write(message.encode());
+        var buffer = message.encode();
+        try {
+
+            return client.write(buffer);
+        }catch(Exception ex){
+            try {
+                Thread.sleep(100);
+            }catch (Exception ex2){
+
+            }
+            return client.write(buffer);
+
+        }
     }
 
     @Override

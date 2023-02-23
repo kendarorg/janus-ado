@@ -49,7 +49,8 @@ public class PgWireFakeServer {
                     AsynchronousSocketChannel client = future.get();
                     System.out.println("[SERVER] Accepted connection from " + client.getRemoteAddress());
                     ByteBuffer buffer = ByteBuffer.allocate(64000);
-                    client.read(buffer, buffer, new LocalCompletionHandler(client, sockServer, conn,maxTimeout));
+                    client.read(buffer, buffer,
+                            new LocalCompletionHandler(client, conn,maxTimeout));
                 }catch (Exception ex){
 
                 }

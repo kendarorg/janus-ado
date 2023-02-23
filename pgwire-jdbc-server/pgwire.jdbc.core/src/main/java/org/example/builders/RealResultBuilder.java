@@ -22,10 +22,16 @@ public class RealResultBuilder {
         var conn = client.getConnection();
         var query = queryMessage.getQuery();
         try {
-            var st=conn.createStatement();
-            var result = st.execute(query);
+            var st=conn.prepareCall(query);
+            var result = st.execute();
             if(!result){
                 var updateCount = st.getUpdateCount();
+                while(true){
+                    var moreResults = st.getMoreResults();
+                    var newUpdate = st.getUpdateCount();
+                    if(newUpdate==-1 && moreResults==false)break;
+                    updateCount+=newUpdate;
+                }
                 CommandComplete commandComplete = new CommandComplete("RESULT "+updateCount);
                 return client.write(commandComplete);
             }else{
