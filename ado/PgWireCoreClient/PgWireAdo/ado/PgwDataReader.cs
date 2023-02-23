@@ -133,7 +133,7 @@ public class PgwDataReader :DbDataReader
 
     public override object GetValue(int ordinal)
     {
-        throw new NotImplementedException();
+        return _currentRow[ordinal];
     }
 
     public override int GetValues(object[] values)
@@ -207,5 +207,22 @@ public class PgwDataReader :DbDataReader
     {
         
         return new PgwDbEnumerator(this);
+    }
+
+    new Task<bool> IsDBNullAsync(int ordinal){
+        return Task.FromResult(IsDBNull(ordinal));
+    }
+
+    new Task<T> GetFieldValueAsync<T>(int ordinal){
+        return Task.FromResult(GetFieldValue<T>(ordinal));
+    }
+
+    new T GetFieldValue<T>(int ordinal){
+        var value = GetValue(ordinal);
+        if(value==null) return default(T);
+        if(value.GetType()==typeof(T)){
+            return (T)value;
+        }
+        throw new NotImplementedException();
     }
 }

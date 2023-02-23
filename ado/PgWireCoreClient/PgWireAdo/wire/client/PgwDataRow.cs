@@ -35,7 +35,10 @@ namespace PgWireAdo.wire.client
                 var colLength = stream.ReadInt32();
                 var data = new byte[colLength];
                 stream.Read(data, 0, colLength);
-                if (descriptor.FormatCode == 0) //text
+                if(colLength==0){
+                    _data.Add(null);
+                }
+                else if (descriptor.FormatCode == 0) //text
                 {
                     _data.Add(UTF8Encoding.Default.GetString(data));
                 }

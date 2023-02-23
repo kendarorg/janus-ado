@@ -12,6 +12,8 @@ namespace PgWireAdo.utils
                 var doid = (TypesOids)field.DataTypeObjectId;
                 switch (doid)
                 {
+                    case (TypesOids.Void): 
+                    return null;
                     case (TypesOids.Int2): return short.Parse(s);
                     case (TypesOids.Int4): return int.Parse(s);
                     case (TypesOids.Int8): return long.Parse(s);
