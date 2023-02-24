@@ -1,6 +1,7 @@
 package org.example.server;
 
 import org.example.messages.*;
+import org.example.messages.commons.ErrorResponse;
 import org.example.messages.extendedquery.ParseMessage;
 
 import java.io.IOException;
@@ -109,6 +110,8 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
         }catch (Exception ex){
 
             System.out.println("[SERVER] ERROR 02: " + ex.getMessage());
+            var error = new ErrorResponse(ex.getMessage());
+            this.write(error,null);
             try {
                 client.close();
             } catch (IOException e) {

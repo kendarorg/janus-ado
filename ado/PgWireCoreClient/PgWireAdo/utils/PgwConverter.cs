@@ -8,6 +8,10 @@ namespace PgWireAdo.utils
         {
             if (field.FormatCode == 0)
             {
+                if (o == null)
+                {
+                    return DBNull.Value;
+                }
                 var s = (String)o;
                 var doid = (TypesOids)field.DataTypeObjectId;
                 switch (doid)
@@ -21,7 +25,7 @@ namespace PgWireAdo.utils
                     case (TypesOids.Varchar):
                     case (TypesOids.Xml):
                     case (TypesOids.Text):
-                    case (TypesOids.Json): return bool.Parse(s);
+                    case (TypesOids.Json): return s;
                     default:
                         throw new Exception();
                 }

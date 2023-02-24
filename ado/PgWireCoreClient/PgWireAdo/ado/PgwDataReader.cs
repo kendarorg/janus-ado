@@ -132,7 +132,14 @@ public class PgwDataReader :DbDataReader
 
     public override string GetString(int ordinal)
     {
-        return (string)_currentRow[ordinal];
+        try
+        {
+            return (string)_currentRow[ordinal];
+        }
+        catch (NullReferenceException)
+        {
+            throw new InvalidOperationException();
+        }
     }
 
     public override object GetValue(int ordinal)
@@ -173,6 +180,13 @@ public class PgwDataReader :DbDataReader
     /// </remarks>
     public override bool Read()
     {
+        if ((_behavior & CommandBehavior.SingleRow) != 0)
+        {
+            if (_currentRow != null)
+            {
+                return false;
+            }
+        }
         var stream = ((PgwConnection)DbConnection).Stream;
         var dataRow = new PgwDataRow(_fields);
         var commandComplete = new CommandComplete();
@@ -181,20 +195,23 @@ public class PgwDataReader :DbDataReader
             dataRow.Read(stream);
             if (dataRow.Data.Count > 0)
             {
+                
+                
                 _currentRow = dataRow.Data;
                 return true;
             }
+            
         }
         else if (commandComplete.IsMatching(stream))
         {
             commandComplete.Read(stream);
-            if (_behavior == CommandBehavior.CloseConnection)
+            if ((_behavior & CommandBehavior.CloseConnection) != 0)
             {
                 DbConnection.Close();
             }
             return false;
         }
-        if (_behavior == CommandBehavior.CloseConnection)
+        if ((_behavior & CommandBehavior.CloseConnection) != 0)
         {
             DbConnection.Close();
         }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,6 +28,11 @@ namespace PgWireAdo.ado
             this.DbType = dbType;
         }
 
+        public PgwParameter(object value)
+        {
+            this.Value= value;
+        }
+
         public PgwParameter()
         {
             
@@ -35,8 +41,8 @@ namespace PgWireAdo.ado
         public override DbType DbType { get; set; }
         public override ParameterDirection Direction { get; set; }
         public override bool IsNullable { get; set; }
-        public override string ParameterName { get; set; }
-        public override string SourceColumn { get; set; }
+        public override string ParameterName { get; [param: AllowNull] set; }
+        public override string SourceColumn { get; [param: AllowNull] set; }
         public override object? Value { get; set; }
         public override bool SourceColumnNullMapping { get; set; }
         public override int Size { get; set; }

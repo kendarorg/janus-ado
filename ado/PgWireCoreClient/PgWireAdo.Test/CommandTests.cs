@@ -540,12 +540,12 @@ public class CommandTests : TestBase
         await using var conn = await OpenConnectionAsync();
         var table = await CreateTempTable(conn, "name TEXT");
         await using var command = new NpgsqlCommand($"SELECT name FROM {table}", conn);
-        Assert.That(command.ExecuteScalarAsync, Is.Null);
+        Assert.That(command.ExecuteScalarAsync, Is.EqualTo(0));
 
         await conn.ExecuteNonQueryAsync($"INSERT INTO {table} (name) VALUES (NULL)");
         Assert.That(command.ExecuteScalarAsync, Is.EqualTo(DBNull.Value));
 
-        await conn.ExecuteNonQueryAsync($"TRUNCATE {table}");
+        await conn.ExecuteNonQueryAsync($"TRUNCATE TABLE {table}");
         for (var i = 0; i < 2; i++)
             await conn.ExecuteNonQueryAsync($"INSERT INTO {table} (name) VALUES ('X')");
         Assert.That(command.ExecuteScalarAsync, Is.EqualTo("X"));

@@ -18,6 +18,7 @@ public class PgwCommand : DbCommand
 
     public PgwCommand(DbConnection dbConnection)
     {
+        DbParameterCollection = new PgwParameterCollection();
         DbConnection = dbConnection;
     }
 
@@ -28,6 +29,7 @@ public class PgwCommand : DbCommand
 
     public PgwCommand(string commandText, DbConnection conn = null, DbTransaction dbTransaction = null)
     {
+        DbParameterCollection = new PgwParameterCollection();
         CommandText = commandText;
         DbConnection = conn;
         DbTransaction = dbTransaction;
@@ -140,8 +142,16 @@ public class PgwCommand : DbCommand
         var stream = ((PgwConnection)DbConnection).Stream;
         if (DbParameterCollection == null || DbParameterCollection.Count == 0)
         {
-            var queryMessage = new QueryMessage(CommandText);
-            queryMessage.Write(stream);
+            if (CommandType == CommandType.TableDirect)
+            {
+                var queryMessage = new QueryMessage("SELECT * FROM "+CommandText+";");
+                queryMessage.Write(stream);
+            }
+            else
+            {
+                var queryMessage = new QueryMessage(CommandText);
+                queryMessage.Write(stream);
+            }
         }
         else
         {

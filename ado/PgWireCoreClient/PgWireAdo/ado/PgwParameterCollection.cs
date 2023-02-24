@@ -5,67 +5,90 @@ namespace PgWireAdo.ado;
 
 public class PgwParameterCollection: DbParameterCollection
 {
+    private readonly Object _syncRoot = new Object();
+    private readonly List<DbParameter?> _data = new();
     public override int Add(object value)
     {
-        throw new NotImplementedException();
+        _data.Add(new PgwParameter(value));
+        return _data.Count;
     }
 
     public override void Clear()
     {
-        throw new NotImplementedException();
+        _data.Clear();
     }
 
     public override bool Contains(object value)
     {
-        throw new NotImplementedException();
+        var result = _data.Find(a => value.Equals(a.Value));
+        return result != null;
     }
 
     public override int IndexOf(object value)
     {
-        throw new NotImplementedException();
+        var idx = _data.FindIndex(a => value.Equals(a.Value));
+        return idx;
     }
 
     public override void Insert(int index, object value)
     {
-        throw new NotImplementedException();
+        while (_data.Count <= index)
+        {
+            _data.Add(null);
+        }
+        _data.Insert(index, new PgwParameter(value));
     }
 
     public override void Remove(object value)
     {
-        throw new NotImplementedException();
+        var idx = _data.FindIndex(a => value.Equals(a.Value));
+        _data.RemoveAt(idx);
     }
 
     public override void RemoveAt(int index)
     {
-        throw new NotImplementedException();
+        if (_data.Count >= index) return;
+        _data.RemoveAt(index);
     }
 
     public override void RemoveAt(string parameterName)
     {
-        throw new NotImplementedException();
+        var idx = _data.FindIndex(a => a.ParameterName!=null && a.ParameterName == parameterName);
+        if (idx != -1)
+        {
+            _data.RemoveAt(idx);
+        }
     }
 
     protected override void SetParameter(int index, DbParameter value)
     {
-        throw new NotImplementedException();
+        while (_data.Count <= index)
+        {
+            _data.Add(null);
+        }
+        _data.Insert(index, value);
     }
 
     protected override void SetParameter(string parameterName, DbParameter value)
     {
-        throw new NotImplementedException();
+        var idx = _data.FindIndex(a => a.ParameterName != null && a.ParameterName == parameterName);
+        if (idx != -1)
+        {
+            _data[idx]=value;
+        }
     }
 
-    public override int Count { get; }
-    public override object SyncRoot { get; }
+    public override int Count => _data.Count;
+    public override object SyncRoot => _syncRoot;
 
     public override int IndexOf(string parameterName)
     {
-        throw new NotImplementedException();
+        return _data.FindIndex(a => a.ParameterName != null && a.ParameterName == parameterName);
     }
 
     public override bool Contains(string value)
     {
-        throw new NotImplementedException();
+        return _data.FindIndex(a => a.ParameterName != null && a.ParameterName == value)>=0;
     }
 
     public override void CopyTo(Array array, int index)
@@ -75,17 +98,17 @@ public class PgwParameterCollection: DbParameterCollection
 
     public override IEnumerator GetEnumerator()
     {
-        throw new NotImplementedException();
+        return _data.GetEnumerator();
     }
 
     protected override DbParameter GetParameter(int index)
     {
-        throw new NotImplementedException();
+        return _data[index];
     }
 
     protected override DbParameter GetParameter(string parameterName)
     {
-        throw new NotImplementedException();
+        return _data.Find(a => parameterName.Equals(a.ParameterName));
     }
 
     public override void AddRange(Array values)
