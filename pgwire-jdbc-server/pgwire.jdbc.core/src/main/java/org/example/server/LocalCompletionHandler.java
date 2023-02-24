@@ -73,6 +73,7 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
             var shouldCloseConnection = false;
             var matchingCount = 0;
             var timeout = new Date().getTime();
+
             while(buffer.hasRemaining() && !shouldCloseConnection) {
                 for (var msg : messages) {
                     if (msg.isMatching(buffer)) {
@@ -83,7 +84,7 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
                         } else {
                             var decoded = msg.decode(buffer);
                             lastMessage= (PGClientMessage) decoded;
-                            decoded.handle(this);
+                            decoded.handle(this,null);
                             matchingCount++;
                             break;
                         }
@@ -119,18 +120,40 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
 
     }
 
-    private List<ByteBuffer> buffers = new ArrayList<>();
 
     @Override
-    public Future<Integer> write(PGServerMessage message) {
+    public Future<Integer> write(PGServerMessage message,Future<Integer> prev) {
+        if(prev!=null) {
+            try {
+                prev.get();
+            } catch (InterruptedException e) {
+
+            } catch (ExecutionException e) {
+
+            }
+            while (true) {
+                if(prev.isDone())break;
+                if(prev.isCancelled()){
+                    break;
+                }
+                try {
+                    Thread.sleep(5);
+                } catch (InterruptedException e) {
+
+                }
+            }
+        }
         System.out.println("[SERVER] Sent: "+ message.getClass().getSimpleName());
+        //System.out.println("[SERVER]   "+ message.toString());
         var buffer = message.encode();
         try {
 
-            return client.write(buffer);
+            var res = client.write(buffer);
+            res.get();
+            return res;
         }catch(Exception ex){
             try {
-                Thread.sleep(100);
+                Thread.sleep(5);
             }catch (Exception ex2){
 
             }

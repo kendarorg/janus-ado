@@ -17,11 +17,16 @@ namespace PgWireAdo.wire.client
         public override bool IsMatching(ReadSeekableStream stream)
         {
             return ReadData(stream, () =>
-                stream.ReadByte() == (byte)BackendMessageCode.RowDescription);
+                {
+                    var byteread = stream.ReadByte();
+                    return byteread == (byte)BackendMessageCode.RowDescription;
+                }
+                );
         }
 
         public override void Read(ReadSeekableStream stream)
         {
+            System.Diagnostics.Trace.WriteLine("RowDescription");
             stream.ReadByte();
             var length = stream.ReadInt32();
             var closCount = stream.ReadInt16();

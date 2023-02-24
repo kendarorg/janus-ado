@@ -4,6 +4,7 @@ import org.example.messages.sslnegotiation.SSLResponse;
 import org.example.server.Context;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
 
 public class TerminateMessage implements PGClientMessage {
     public TerminateMessage(){
@@ -24,7 +25,7 @@ public class TerminateMessage implements PGClientMessage {
     }
 
     @Override
-    public void handle(Context client) {
+    public void handle(Context client, Future<Integer> prev) {
 
     }
 }

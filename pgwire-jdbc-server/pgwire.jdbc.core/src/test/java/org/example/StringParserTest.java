@@ -51,4 +51,25 @@ public class StringParserTest {
         assertEquals("SELECT 1;",result.get(0));
         assertEquals("UPDATE test SET name='y''o' WHERE 1=0",result.get(1));
     }
+
+    @Test
+    public void standardQuery(){
+        var result = StringParser.getTypes("SELECT 1;UPDATE test SET name='y''o' WHERE 1=0;");
+        assertEquals(2,result.size());
+        assertEquals("SELECT 1;",result.get(0).getValue());
+        assertEquals(SqlStringType.SELECT,result.get(0).getType());
+        assertEquals("UPDATE test SET name='y''o' WHERE 1=0;",result.get(1).getValue());
+        assertEquals(SqlStringType.UPDATE,result.get(1).getType());
+    }
+
+    @Test
+    public void withError(){
+        var result = StringParser.getTypes("\r\nDROP TABLE IF EXISTS temp_table1 CASCADE;\r\n CREATE TABLE temp_table1 (intf int);\r\n");
+        assertEquals(2,result.size());
+        assertEquals("\r\nDROP TABLE IF EXISTS temp_table1 CASCADE;",result.get(0).getValue());
+        assertEquals(SqlStringType.UPDATE,result.get(0).getType());
+        assertEquals("\r\n CREATE TABLE temp_table1 (intf int);",result.get(1).getValue());
+        assertEquals(SqlStringType.UPDATE,result.get(1).getType());
+    }
+
 }

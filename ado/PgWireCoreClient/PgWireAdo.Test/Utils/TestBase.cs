@@ -20,7 +20,7 @@ namespace PgWireAdo.Test.Utils
         }
 
         private Process _process;
-        private bool _startServer = true;
+        private bool _startServer = false;
         private DbConnection _connection;
 
         public int WriteBufferSize
@@ -79,7 +79,7 @@ namespace PgWireAdo.Test.Utils
                 while (!_process.StandardOutput.EndOfStream)
                 {
                     string line = _process.StandardOutput.ReadLine();
-                    Console.WriteLine(line);
+                    System.Diagnostics.Trace.WriteLine(line);
                     TestContext.Progress.WriteLine(line);
                     // do something with line
                 }
@@ -89,6 +89,7 @@ namespace PgWireAdo.Test.Utils
 
         protected void TbRunAfterAnyTests()
         {
+            if (_process == null) return;
             _process.Kill(true);
         }
 

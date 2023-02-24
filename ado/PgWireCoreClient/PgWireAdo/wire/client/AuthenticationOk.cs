@@ -20,6 +20,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(ReadSeekableStream stream)
         {
+            System.Diagnostics.Trace.WriteLine("AutenthicationOk");
             stream.ReadByte();
             stream.ReadInt32();
             stream.ReadInt32();

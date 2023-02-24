@@ -18,6 +18,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(ReadSeekableStream stream)
         {
+            System.Diagnostics.Trace.WriteLine("CommandComplete");
             stream.ReadByte();
             stream.ReadInt32();
             var data = stream.ReadAsciiString();

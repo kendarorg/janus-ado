@@ -12,6 +12,7 @@ namespace PgWireAdo.wire.server
     {
         public override void Write(ReadSeekableStream stream)
         {
+            System.Diagnostics.Trace.WriteLine("TerminateMessage");
             stream.WriteByte((byte)'X');
         }
     }

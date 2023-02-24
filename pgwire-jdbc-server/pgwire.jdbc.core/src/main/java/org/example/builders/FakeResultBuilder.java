@@ -22,7 +22,7 @@ public class FakeResultBuilder {
                 //new Field("id", 0, 0, TypesOids.Int4, 4, -1, 0,),
                 //new Field("name", 0, 0, TypesOids.Text, -1, -1, 0)
         ));
-        writeResult = client.write(rowDescription);
+        writeResult = client.write(rowDescription,null);
 
 
         // Then we send a DataRow for each row. We'll send two rows, with values (1, "one") and (2, "two")
@@ -30,18 +30,18 @@ public class FakeResultBuilder {
                 ByteBuffer.wrap("1".getBytes(StandardCharsets.UTF_8)),
                 ByteBuffer.wrap("one".getBytes(StandardCharsets.UTF_8))
         ), rowDescription.getFields());
-        writeResult = client.write(dataRow1);
+        writeResult = client.write(dataRow1,writeResult);
 
         DataRow dataRow2 = new DataRow(List.of(
                 ByteBuffer.wrap("2".getBytes(StandardCharsets.UTF_8)),
                 ByteBuffer.wrap("two".getBytes(StandardCharsets.UTF_8))
         ), rowDescription.getFields());
 
-        writeResult = client.write(dataRow2);
+        writeResult = client.write(dataRow2,writeResult);
 
         // We send a CommandComplete
         CommandComplete commandComplete = new CommandComplete("SELECT 2");
-        writeResult = client.write(commandComplete);
+        writeResult = client.write(commandComplete,writeResult);
 
         return writeResult;
     }

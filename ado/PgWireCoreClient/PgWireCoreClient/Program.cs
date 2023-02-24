@@ -8,12 +8,12 @@ DbProviderFactories.RegisterFactory("Npgsql", Npgsql.NpgsqlFactory.Instance);
 
 using (DataTable providers = DbProviderFactories.GetFactoryClasses())
 {
-    Console.WriteLine("Available ADO.NET Data Providers:");
+    System.Diagnostics.Trace.WriteLine("Available ADO.NET Data Providers:");
     foreach (DataRow prov in providers.Rows)
     {
-        Console.WriteLine("Name:{0}", prov["Name"]);
-        Console.WriteLine("Description:{0}", prov["Description"]);
-        Console.WriteLine("Invariant Name:{0}", prov["InvariantName"]);
+        System.Diagnostics.Trace.WriteLine("Name:{0}", prov["Name"]);
+        System.Diagnostics.Trace.WriteLine("Description:{0}", prov["Description"]);
+        System.Diagnostics.Trace.WriteLine("Invariant Name:{0}", prov["InvariantName"]);
     }
 }
 
@@ -40,14 +40,14 @@ if (reader.HasRows)
 {
     while (reader.Read())
     {
-        Console.WriteLine("{0}\t{1}", reader.GetInt32(0),
+        System.Diagnostics.Trace.WriteLine("{0}\t{1}", reader.GetInt32(0),
             reader.GetString(1));
     }
 }
 
 conn.Close();
 
-Console.WriteLine("DONE!");
+System.Diagnostics.Trace.WriteLine("DONE!");
 /*
 
 DbProviderFactory factory = DbProviderFactories.GetFactory("Npgsql");
@@ -73,7 +73,7 @@ if (reader.HasRows)
 {
     while (reader.Read())
     {
-        Console.WriteLine("{0}\t{1}", reader.GetInt32(0),
+        System.Diagnostics.Trace.WriteLine("{0}\t{1}", reader.GetInt32(0),
             reader.GetString(1));
     }
 }

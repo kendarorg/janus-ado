@@ -160,6 +160,10 @@ public class PgwDataReader :DbDataReader
         throw new NotImplementedException();
     }
 
+    public Task<bool> ReadAsync()
+    {
+        return Task.FromResult(Read());
+    }
     /// <summary>
     /// Advances the reader to the next record in a result set.
     /// </summary>

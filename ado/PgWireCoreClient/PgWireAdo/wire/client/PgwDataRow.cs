@@ -21,11 +21,15 @@ namespace PgWireAdo.wire.client
         public override bool IsMatching(ReadSeekableStream stream)
         {
             return ReadData(stream, () =>
-                stream.ReadByte() == (byte)BackendMessageCode.DataRow);
+                   {
+                       var rowByte = (byte)stream.ReadByte();
+                       return rowByte == (byte)BackendMessageCode.DataRow;
+                   });
         }
 
         public override void Read(ReadSeekableStream stream)
         {
+            System.Diagnostics.Trace.WriteLine("PgwDataRow");
             stream.ReadByte();
             var length = stream.ReadInt32();
             var colCount = stream.ReadInt16();

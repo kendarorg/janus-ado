@@ -14,6 +14,7 @@ namespace PgWireAdo.wire.server
     {
         public override void Write(ReadSeekableStream stream)
         {
+            System.Diagnostics.Trace.WriteLine("SSLNegotation");
             WriteByte(0x00);
             WriteByte(0x00);
             WriteByte(0x00);

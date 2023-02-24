@@ -54,10 +54,10 @@ public class PgwCommand : DbCommand
         CallQuery();
         var result = 0;
         var commandComplete = new CommandComplete();
-        if (commandComplete.IsMatching(stream))
+        while (commandComplete.IsMatching(stream))
         {
             commandComplete.Read(stream);
-            result = commandComplete.Count;
+            result += commandComplete.Count;
         }
         var readyForQuery = new ReadyForQuery();
         if (readyForQuery.IsMatching(stream))
@@ -72,42 +72,12 @@ public class PgwCommand : DbCommand
 
     public override Task<int> ExecuteNonQueryAsync(CancellationToken cancellationToken)
     {
-        return Task.Run(ExecuteNonQuery);
-    }
-
-    public override object? ExecuteScalar()
-    {
-        if (DbConnection == null) throw new InvalidOperationException("Missing connection");
-        var stream = ((PgwConnection)DbConnection).Stream;
-        CallQuery();
-        object result = null;
-        var dataRow = new PgwDataRow(_fields);
-        if (dataRow.IsMatching(stream))
-        {
-            dataRow.Read(stream);
-            if (dataRow.Data.Count > 0)
-            {
-                var field = _fields[0];
-                result = PgwConverter.convert(field,dataRow.Data[0]);
-            }
-        }
-        var commandComplete = new CommandComplete();
-        if (commandComplete.IsMatching(stream))
-        {
-            commandComplete.Read(stream);
-            result = commandComplete.Count;
-        }
-        var readyForQuery = new ReadyForQuery();
-        if (readyForQuery.IsMatching(stream))
-        {
-            readyForQuery.Read(stream);
-        }
-        return result;
+        return Task.FromResult(ExecuteNonQuery());
     }
 
     public override async Task<object?> ExecuteScalarAsync(CancellationToken cancellationToken)
     {
-        return await Task.Run(ExecuteScalar);
+        return await Task.FromResult(ExecuteScalar());
     }
 
     public override void Prepare()
@@ -119,9 +89,51 @@ public class PgwCommand : DbCommand
     {
         CallQuery();
         var result = new PgwDataReader(DbConnection, CommandText, _fields,behavior);
+        
         return result;
     }
 
+
+
+    public override object? ExecuteScalar()
+    {
+        if (DbConnection == null) throw new InvalidOperationException("Missing connection");
+        
+        var stream = ((PgwConnection)DbConnection).Stream;
+        CallQuery();
+        object result = null;
+        var dataRow = new PgwDataRow(_fields);
+        var hasData = false;
+        if (dataRow.IsMatching(stream))
+        {
+            hasData = true;
+            dataRow.Read(stream);
+            if (dataRow.Data.Count > 0)
+            {
+                var field = _fields[0];
+                result = PgwConverter.convert(field, dataRow.Data[0]);
+            }
+        }
+        var commandComplete = new CommandComplete();
+        while (commandComplete.IsMatching(stream))
+        {
+            commandComplete.Read(stream);
+            if (!hasData)
+            {
+                if (result == null) result = 0;
+                var tmp = (int)result;
+                tmp +=commandComplete.Count;
+                result = tmp;
+            }
+            //
+        }
+        var readyForQuery = new ReadyForQuery();
+        if (readyForQuery.IsMatching(stream))
+        {
+            readyForQuery.Read(stream);
+        }
+        return result;
+    }
 
     private void CallQuery()
     {

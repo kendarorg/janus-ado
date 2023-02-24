@@ -23,6 +23,7 @@ namespace PgWireAdo.wire.server
 
         public override void Write(ReadSeekableStream stream)
         {
+            System.Diagnostics.Trace.WriteLine("StartupMessage");
             var data = new List<byte[]>();
             int length = 4 + 4+1;
             foreach (var parameter in _parameters)

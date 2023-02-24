@@ -1,6 +1,5 @@
 package org.example.messages;
 
-import org.example.PgWireFakeServer;
 import org.example.builders.RealResultBuilder;
 import org.example.messages.commons.ReadyForQuery;
 import org.example.server.Context;
@@ -48,23 +47,23 @@ public class QueryMessage implements PGClientMessage {
     }
 
     @Override
-    public void handle(Context client) {
+    public void handle(Context client, Future<Integer> prev) {
         //System.out.println("[SERVER] Query Message: " + this);
 
         Future<Integer> writeResult;
 
         // Let's assume it's a query message, and just send a simple response
         // First we send a RowDescription. We'll send two columns, with names "id" and "name"
-        writeResult = RealResultBuilder.buildRealResult(this,client);
+        writeResult = RealResultBuilder.buildRealResultQuery(this,client,prev);
 
         // Finally, write ReadyForQuery
         ReadyForQuery readyForQuery = new ReadyForQuery();
-        writeResult = client.write(readyForQuery);
+        writeResult = client.write(readyForQuery,writeResult);
 
         try {
             writeResult.get();
         } catch (Exception e) {
-            e.printStackTrace();
+
         }
     }
 }

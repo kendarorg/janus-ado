@@ -6,6 +6,13 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 public class CommandComplete implements PGServerMessage {
+    @Override
+    public String toString() {
+        return "CommandComplete{" +
+                "commandTag='" + commandTag + '\'' +
+                '}';
+    }
+
     public String getCommandTag() {
         return commandTag;
     }

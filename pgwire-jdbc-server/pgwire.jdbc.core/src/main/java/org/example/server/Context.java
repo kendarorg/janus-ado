@@ -9,7 +9,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 public interface Context {
-    Future<Integer> write(PGServerMessage readyForQuery);
+    Future<Integer> write(PGServerMessage readyForQuery,Future<Integer> prev);
 
     void add(Object pgClientMessage);
     Object get(Predicate<Object> test);

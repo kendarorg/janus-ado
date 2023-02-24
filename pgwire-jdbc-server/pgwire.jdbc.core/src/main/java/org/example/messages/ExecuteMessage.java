@@ -41,19 +41,17 @@ public class ExecuteMessage implements PGClientMessage {
     }
 
     @Override
-    public void handle(Context client) {
+    public void handle(Context client, Future<Integer> prev) {
         Future<Integer> writeResult = null;
-        {
-            var msg = client.get((o) -> {
-                if (o instanceof ParseMessage) {
-                    if (((ParseMessage) o).getPsName().equalsIgnoreCase(portal)) {
-                        return true;
-                    }
+        var msg = client.get((o) -> {
+            if (o instanceof ParseMessage) {
+                if (((ParseMessage) o).getPsName().equalsIgnoreCase(portal)) {
+                    return true;
                 }
-                return false;
-            });
-            writeResult = RealResultBuilder.buildRealResult((ParseMessage) msg,client);
-        }
+            }
+            return false;
+        });
+        writeResult = RealResultBuilder.buildRealResultPs((ParseMessage) msg,client,prev);
 
 
         try {

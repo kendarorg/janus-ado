@@ -1,7 +1,7 @@
 package org.example;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class StringParser {
 
@@ -12,6 +12,57 @@ public class StringParser {
             System.out.println(token);
         }
     }*/
+    static Map<String,SqlStringType> select;
+    static {
+        select = new ConcurrentHashMap<>();
+        select.put("select",SqlStringType.SELECT);
+        select.put("show",SqlStringType.SELECT);
+        select.put("explain",SqlStringType.SELECT);
+        select.put("describe",SqlStringType.SELECT);
+
+        select.put("update",SqlStringType.UPDATE);
+        select.put("insert",SqlStringType.UPDATE);
+        select.put("create",SqlStringType.UPDATE);
+        select.put("delete",SqlStringType.UPDATE);
+        select.put("merge",SqlStringType.UPDATE);
+        select.put("alter",SqlStringType.UPDATE);
+        select.put("drop",SqlStringType.UPDATE);
+        select.put("create",SqlStringType.UPDATE);
+        select.put("grant",SqlStringType.UPDATE);
+        select.put("set",SqlStringType.UPDATE);
+        select.put("truncate",SqlStringType.UPDATE);
+        select.put(":janus:",SqlStringType.UPDATE);
+
+        select.put("call",SqlStringType.CALL);
+        select.put("execute",SqlStringType.CALL);
+        select.put("run",SqlStringType.CALL);
+    }
+
+    public static boolean isUnknown(List<SqlParseResult> data){
+        return data.stream().anyMatch(a->a.getType()==SqlStringType.UNKNOWN||a.getType()==SqlStringType.NONE);
+    }
+
+    public static List<SqlParseResult> getTypes(String input){
+        var result = new ArrayList<SqlParseResult>();
+        var sqls=parseSql(input);
+        for(var sql:sqls){
+            var splitted = sql.trim().split("\\s+");
+            if(splitted.length==0){
+                continue;
+            }
+            var first = splitted[0].trim().toLowerCase(Locale.ROOT);
+            if(first.length()==0){
+                continue;
+            }
+            if(select.containsKey(first)){
+                var founded = select.get(first);
+                result.add(new SqlParseResult(sql,founded));
+            }else{
+                result.add(new SqlParseResult(sql,SqlStringType.UNKNOWN));
+            }
+        }
+        return result;
+    }
 
     public static List<String> parseSql(String input){
         List<String> sqls = new ArrayList<>();

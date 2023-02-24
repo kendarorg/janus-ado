@@ -92,19 +92,19 @@ public class ParseMessage implements PGClientMessage {
     }
 
     @Override
-    public void handle(Context client) {
+    public void handle(Context client, Future<Integer> prev) {
         Future<Integer> writeResult=null;
         if(fakeQueries.stream().anyMatch(a->query.toLowerCase(Locale.ROOT).startsWith(a))){
             System.out.println("[SERVER] Fake: "+query);
             ReadyForQuery readyForQuery = new ReadyForQuery();
-            writeResult = client.write(readyForQuery);
+            writeResult = client.write(readyForQuery,prev);
             buffer.position(buffer.limit());
         }else {
             System.out.println("[SERVER] Parse: "+query);
             client.add((PGClientMessage)this);
 
             ParseCompleted parseCompleted = new ParseCompleted();
-            writeResult = client.write(parseCompleted);
+            writeResult = client.write(parseCompleted,prev);
             BindMessage bind = new BindMessage();
             if(bind.isMatching(buffer)) {
                 System.out.println("[SERVER] ParseMessage-Received: BindMessage");
@@ -112,7 +112,7 @@ public class ParseMessage implements PGClientMessage {
 
             }
             BindCompleted bindCompleted = new BindCompleted();
-            writeResult = client.write(bindCompleted);
+            writeResult = client.write(bindCompleted,writeResult);
             DescribeMessage describeMessage = new DescribeMessage();
             describes = new ArrayList<DescribeMessage>();
             while(describeMessage.isMatching(buffer)) {
@@ -123,14 +123,14 @@ public class ParseMessage implements PGClientMessage {
             if(executeMessage.isMatching(buffer)){
                 System.out.println("[SERVER] ParseMessage-Received: ExecuteMessage");
                 var message = executeMessage.decode(buffer);
-                message.handle(client);
+                message.handle(client,writeResult);
             }
 
             SyncMessage syncMessage = new SyncMessage();
             if(syncMessage.isMatching(buffer)){
                 System.out.println("[SERVER] ParseMessage-Received: SyncMessage");
                 var message = syncMessage.decode(buffer);
-                message.handle(client);
+                message.handle(client,writeResult);
             }
 
 

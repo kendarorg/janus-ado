@@ -26,10 +26,10 @@ public class SyncMessage implements PGClientMessage{
     }
 
     @Override
-    public void handle(Context client) {
+    public void handle(Context client,Future<Integer> prev) {
         Future<Integer> writeResult;
         ReadyForQuery readyForQuery = new ReadyForQuery();
-        writeResult = client.write(readyForQuery);
+        writeResult = client.write(readyForQuery,prev);
         try {
             writeResult.get();
         } catch (Exception e) {

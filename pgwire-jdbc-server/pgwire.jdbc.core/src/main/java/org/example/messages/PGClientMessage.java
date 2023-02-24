@@ -6,11 +6,12 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 
 public interface PGClientMessage {
     PGClientMessage decode(ByteBuffer buffer);
     boolean isMatching(ByteBuffer b);
-    void handle(Context client);
+    void handle(Context client, Future<Integer> prev);
 
 
     static List<String> extractStrings(ByteBuffer buffer) {

@@ -20,6 +20,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(ReadSeekableStream stream)
         {
+            System.Diagnostics.Trace.WriteLine("BackendKeyData");
             stream.ReadByte();
             stream.ReadInt32();
             ProcessKey = stream.ReadInt32();

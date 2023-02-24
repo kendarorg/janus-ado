@@ -4,6 +4,7 @@ import org.example.messages.sslnegotiation.SSLResponse;
 import org.example.server.Context;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
 
 public class SSLNegotation implements PGClientMessage {
     public SSLNegotation(){
@@ -28,11 +29,11 @@ public class SSLNegotation implements PGClientMessage {
     }
 
     @Override
-    public void handle(Context client) {
+    public void handle(Context client, Future<Integer> prev) {
         //System.out.println("[SERVER] SSL Request: " + this);
 
         try {
-            client.write(new SSLResponse()).get();
+            client.write(new SSLResponse(),prev).get();
         } catch (Exception e) {
             e.printStackTrace();
         }

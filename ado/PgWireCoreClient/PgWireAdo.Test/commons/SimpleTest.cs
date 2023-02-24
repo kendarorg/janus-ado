@@ -2,17 +2,20 @@ using System.Data.Common;
 using PgWireAdo.ado;
 using PgWireAdo.Test.Utils;
 
-#pragma warning disable NUnit2005
-namespace PgWireAdo.Test.commons
-{
-    public class Tests : TestBase
+
+namespace Npgsql.Tests;
+
+    public class SimpleTests : TestBase
     {
 
         [Test]
         public void Test1()
         {
             var conn = OpenConnection();
-            var cmd = conn.CreateCommand();
+           var  cmd = conn.CreateCommand();
+            cmd.CommandText = "drop table if  exists test";
+            cmd.ExecuteNonQuery();
+         cmd = conn.CreateCommand();
             cmd.CommandText = "create table if not exists test(id int, name varchar)";
             cmd.ExecuteNonQuery();
 
@@ -39,5 +42,3 @@ namespace PgWireAdo.Test.commons
             //conn.Close();
         }
     }
-}
-#pragma warning restore NUnit2005

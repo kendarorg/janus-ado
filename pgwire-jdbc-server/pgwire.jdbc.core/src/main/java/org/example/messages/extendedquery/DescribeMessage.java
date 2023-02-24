@@ -4,6 +4,7 @@ import org.example.messages.PGClientMessage;
 import org.example.server.Context;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
 
 public class DescribeMessage implements PGClientMessage {
     private char type;
@@ -36,7 +37,13 @@ public class DescribeMessage implements PGClientMessage {
     }
 
     @Override
-    public void handle(Context client) {
-
+    public void handle(Context client, Future<Integer> prev) {
+        if(prev!=null) {
+            try {
+                prev.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

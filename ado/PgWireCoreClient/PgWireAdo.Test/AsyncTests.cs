@@ -15,7 +15,8 @@ public class AsyncTests:TestBase
             var tableName = await CreateTempTable(conn, "intf int");
             await using var cmd = conn.CreateCommand();
             cmd.CommandText = $"INSERT INTO {tableName} (intf) VALUES (4)";
-            await cmd.ExecuteNonQueryAsync();
+            var result = await cmd.ExecuteNonQueryAsync();
+            Assert.That(result,Is.EqualTo(1));
             Assert.That(await conn.ExecuteScalarAsync($"SELECT intf FROM {tableName}"), Is.EqualTo(4));
         }
 

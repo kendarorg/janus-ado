@@ -5,6 +5,8 @@ import org.example.server.Context;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class BindMessage implements PGClientMessage {
     public String getDestinationPortalName() {
@@ -90,6 +92,13 @@ public class BindMessage implements PGClientMessage {
     }
 
     @Override
-    public void handle(Context client) {
+    public void handle(Context client, Future<Integer> prev) {
+        if(prev!=null) {
+            try {
+                prev.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

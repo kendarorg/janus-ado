@@ -57,26 +57,26 @@ public class StartupMessage implements PGClientMessage {
     }
 
     @Override
-    public void handle(Context client) {
+    public void handle(Context client, Future<Integer> prev) {
         //System.out.println("[SERVER] Startup Message: " + this);
 
         Future<Integer> writeResult;
 
         // Then, write AuthenticationOk
         AuthenticationOk authRequest = new AuthenticationOk();
-        writeResult = client.write(authRequest);
+        writeResult = client.write(authRequest,prev);
 
 
         // Then, write BackendKeyData
         BackendKeyData backendKeyData = new BackendKeyData(1234, 5678);
-        writeResult = client.write(backendKeyData);
+        writeResult = client.write(backendKeyData,writeResult);
 
         ParameterStatus serverVersion = new ParameterStatus("server_version","15");
-        writeResult = client.write(serverVersion);
+        writeResult = client.write(serverVersion,writeResult);
 
         // Then, write ReadyForQuery
         ReadyForQuery readyForQuery = new ReadyForQuery();
-        writeResult = client.write(readyForQuery);
+        writeResult = client.write(readyForQuery,writeResult);
 
         try {
             writeResult.get();
