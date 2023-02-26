@@ -16,6 +16,7 @@ public class BasicTest {
             "user=fred&" +
             "password=secret&" +
             "ssl=false";
+
     private static Connection conn;
 
     public String getH2Connection(){
@@ -177,6 +178,33 @@ public class BasicTest {
         assertTrue(result.next());
         assertEquals(1,result.getInt(1));
         assertEquals("2020-12-25",result.getDate(2).toString());
+
+        conn.createStatement().execute("drop table test");
+    }
+
+    @Test
+    void testPerparedStatemen2t() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+
+
+        String url = POSTGRES_FAKE_CONNECTION_STRING;
+        Connection conn = DriverManager.getConnection(url);
+
+        conn.createStatement().execute("create table if not exists test(id int, name varchar)");
+
+        conn.createStatement().execute("insert into test values(1,'fuffa')");
+        conn.createStatement().execute("insert into test values(2,'faffa')");
+        conn.createStatement().execute("insert into test values(3,'faffa')");
+        conn.createStatement().execute("insert into test values(4,'fuffa')");
+        var ps = conn.prepareStatement("select * FROM test where name='fuffa'");
+        var result = ps.executeQuery();
+        result.next();
+        System.out.println(result.getInt(1)+"-"+result.getString(2));
+
+
+        var ps2 = conn.prepareStatement("select * FROM test where name='fuffa'");
+        var result2 = ps2.executeQuery();
+        result2.next();
+        System.out.println(result2.getInt(1)+"-"+result2.getString(2));
 
         conn.createStatement().execute("drop table test");
     }

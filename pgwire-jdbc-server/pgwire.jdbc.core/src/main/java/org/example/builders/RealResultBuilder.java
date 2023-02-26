@@ -15,7 +15,6 @@ import java.nio.ByteBuffer;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.concurrent.Future;
-import java.util.function.Function;
 
 public class RealResultBuilder {
 
@@ -32,7 +31,7 @@ public class RealResultBuilder {
                     CommandComplete commandComplete = new CommandComplete("RESULT " + updateCount);
                     return client.write(commandComplete,prev);
                 } else {
-                    return loadResultset(client, st,prev);
+                    return loadResultset(client, st,prev, "", "",0);
                 }
             }
             case UPDATE:{
@@ -49,7 +48,7 @@ public class RealResultBuilder {
                     CommandComplete commandComplete = new CommandComplete("RESULT " + updateCount);
                     return client.write(commandComplete,prev);
                 } else {
-                    return loadResultset(client, st,prev);
+                    return loadResultset(client, st,prev, "", "",0);
                 }
             }
         }
@@ -78,65 +77,93 @@ public class RealResultBuilder {
         }
     }
 
-    public static Future<Integer> buildRealResultPs(ParseMessage parseMessage, Context client,Future<Integer> prev) {
+    public static Future<Integer> buildRealResultPs(ParseMessage parseMessage, Context client,
+                                                    Future<Integer> prev,
+                                                    String psName,String portal, int maxRecords) throws SQLException {
 
-        Future<Integer> writeResult;
-        var conn = client.getConnection();
-        var query = parseMessage.getQuery();
+        var resultSet = client.get(psName+"_"+portal+"_rs");
+        Future<Integer> writeResult = null;
+        if(resultSet==null) {
 
 
-        try {
-            if (query.startsWith(":JANUS:")) {
-                return handleSpecialQuery(conn, query, client);
-            }
+            var conn = client.getConnection();
+            var query = parseMessage.getQuery();
 
-            var result = false;
-            Statement st = null;
-            if (parseMessage.getBinds() != null) {
-                var bind = parseMessage.getBinds();
-                if (bind.getParameterValues().size() > 0) {
-                    st = conn.prepareStatement(query);
-                    var pmd = ((PreparedStatement) st).getParameterMetaData();
-                    for (var i = 0; i < bind.getParameterValues().size(); i++) {
-                        var clName = pmd.getParameterClassName(i + 1);
-                        var clPrec = pmd.getPrecision(i + 1);
-                        var clScale = pmd.getScale(i + 1);
-                        var sqlType = pmd.getParameterType(i + 1);
-                        Class<?> clReal;
-                        try {
-                            clReal = Class.forName(clName);
-                            ((PreparedStatement) st).setObject(i + 1,
-                                    PgwConverter.toPgWire(
-                                            bind.getParamFormatCodes()[i],
-                                            clReal,
-                                            bind.getParameterValues().get(i),
-                                            clPrec, clScale),
-                                    sqlType, clScale);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
 
-                    }
-                    result = ((PreparedStatement) st).execute();
+            try {
+                if (query.startsWith(":JANUS:")) {
+                    return handleSpecialQuery(conn, query, client);
                 }
+
+                var result = false;
+                Statement st = null;
+                if (parseMessage.getBinds() != null) {
+                    var bind = parseMessage.getBinds();
+                    if (bind.getParameterValues().size() > 0) {
+                        st = conn.prepareStatement(query);
+                        var pmd = ((PreparedStatement) st).getParameterMetaData();
+                        for (var i = 0; i < bind.getParameterValues().size(); i++) {
+                            var clName = pmd.getParameterClassName(i + 1);
+                            var clPrec = pmd.getPrecision(i + 1);
+                            var clScale = pmd.getScale(i + 1);
+                            var sqlType = pmd.getParameterType(i + 1);
+                            Class<?> clReal;
+                            try {
+                                clReal = Class.forName(clName);
+                                ((PreparedStatement) st).setObject(i + 1,
+                                        PgwConverter.toPgWire(
+                                                bind.getParamFormatCodes()[i],
+                                                clReal,
+                                                bind.getParameterValues().get(i),
+                                                clPrec, clScale),
+                                        sqlType, clScale);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+
+                        }
+                        result = ((PreparedStatement) st).execute();
+                    }
+                }
+                if (st == null) {
+                    st = conn.createStatement();
+                    result = st.execute(query);
+                }
+                if (result) {
+                    return loadResultset(client, st, prev,psName,portal,maxRecords);
+                }
+            } catch (SQLException e) {
+                ErrorResponse errorResponse = new ErrorResponse(e.getMessage());
+                prev = client.write(errorResponse, prev);
             }
-            if (st == null) {
-                st = conn.createStatement();
-                result = st.execute(query);
+            CommandComplete commandComplete = new CommandComplete(query);
+            return client.write(commandComplete, prev);
+        }else{
+            if(maxRecords==0){
+                maxRecords=Integer.MAX_VALUE;
             }
-            if (result) {
-                return loadResultset(client, st,prev);
+            int count = 0;
+            var rs = (ResultSet) client.get(psName+"_"+portal+"_rs");
+            var fields = (ArrayList<Field>)client.get(psName+"_"+portal+"_fi");
+            while (rs.next() && count<maxRecords) {
+                count++;
+                var byteRow = new ArrayList<ByteBuffer>();
+                for (var i = 0; i < fields.size(); i++) {
+                    byteRow.add(buildData(fields.get(i), rs, i + 1));
+                }
+                DataRow dataRow = new DataRow(byteRow, fields);
+                writeResult = client.write(dataRow,prev);
             }
-        } catch (SQLException e) {
-            ErrorResponse errorResponse = new ErrorResponse(e.getMessage());
-            prev = client.write(errorResponse,prev);
+
+            client.put(psName+"_"+portal+"_rs",rs);
+            CommandComplete commandComplete = new CommandComplete("SELECT " + count);
+            return client.write(commandComplete,writeResult);
         }
-        CommandComplete commandComplete = new CommandComplete(query);
-        return client.write(commandComplete,prev);
     }
 
 
-    private static Future<Integer> loadResultset(Context client, Statement st,Future<Integer> prev) throws SQLException {
+    private static Future<Integer> loadResultset(Context client, Statement st, Future<Integer> prev,
+                                                 String psName, String portal, int maxRecords) throws SQLException {
         Future<Integer> writeResult;
         var rs = st.getResultSet();
         var md = rs.getMetaData();
@@ -153,8 +180,11 @@ public class RealResultBuilder {
 
         RowDescription rowDescription = new RowDescription(fields);
         writeResult = client.write(rowDescription,prev);
+        if(maxRecords==0){
+            maxRecords=Integer.MAX_VALUE;
+        }
         int count = 0;
-        while (rs.next()) {
+        while (rs.next() && count<maxRecords) {
             count++;
             var byteRow = new ArrayList<ByteBuffer>();
             for (var i = 0; i < fields.size(); i++) {
@@ -163,6 +193,8 @@ public class RealResultBuilder {
             DataRow dataRow = new DataRow(byteRow, fields);
             writeResult = client.write(dataRow,writeResult);
         }
+        client.put(psName+"_"+portal+"_rs",rs);
+        client.put(psName+"_"+portal+"_fi",fields);
         CommandComplete commandComplete = new CommandComplete("SELECT " + count);
         return client.write(commandComplete,writeResult);
     }

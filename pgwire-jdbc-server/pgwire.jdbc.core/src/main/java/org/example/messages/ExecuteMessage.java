@@ -9,13 +9,30 @@ import java.util.concurrent.Future;
 
 public class ExecuteMessage implements PGClientMessage {
 
+    public String getPortal() {
+        return portal;
+    }
+
+    public void setPortal(String portal) {
+        this.portal = portal;
+    }
+
+    public void setMaxRecords(int maxRecords) {
+        this.maxRecords = maxRecords;
+    }
+
     private String portal;
     private int maxRecords;
+    private String psName;
 
     public ExecuteMessage(String portal, int maxRecords) {
 
         this.portal = portal;
         this.maxRecords = maxRecords;
+    }
+
+    public ExecuteMessage(String psName, String sourcePortal) {
+        this.psName = psName;
     }
 
     public ExecuteMessage() {
@@ -42,22 +59,28 @@ public class ExecuteMessage implements PGClientMessage {
 
     @Override
     public void handle(Context client, Future<Integer> prev) {
-        Future<Integer> writeResult = null;
-        var msg = client.get((o) -> {
-            if (o instanceof ParseMessage) {
-                if (((ParseMessage) o).getPsName().equalsIgnoreCase(portal)) {
-                    return true;
-                }
-            }
-            return false;
-        });
-        writeResult = RealResultBuilder.buildRealResultPs((ParseMessage) msg,client,prev);
 
 
         try {
+            Future<Integer> writeResult = null;
+            var msg = client.get(psName+"_"+portal);
+            writeResult = RealResultBuilder.buildRealResultPs((ParseMessage) msg,client,prev,psName, portal,maxRecords);
+
             writeResult.get();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public int getMaxRecords() {
+        return maxRecords;
+    }
+
+    public String getPsName() {
+        return psName;
+    }
+
+    public void setPsName(String psName) {
+        this.psName = psName;
     }
 }

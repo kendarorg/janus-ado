@@ -10,10 +10,7 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -168,6 +165,18 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
     @Override
     public void add(Object pgClientMessage) {
         storage.add(pgClientMessage);
+    }
+
+    private Map<String,Object> statPortal=new ConcurrentHashMap<>();
+
+    @Override
+    public void put(String id, Object data) {
+        statPortal.put(id.toLowerCase(Locale.ROOT),data);
+    }
+
+    @Override
+    public Object get(String id) {
+        return statPortal.get(id.toLowerCase(Locale.ROOT));
     }
 
     @Override

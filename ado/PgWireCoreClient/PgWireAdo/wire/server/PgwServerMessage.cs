@@ -21,6 +21,12 @@ namespace PgWireAdo.wire.server
             toSend.WriteByte(value);
         }
 
+        protected void WriteInt16(short value)
+        {
+            var val = BitConverter.GetBytes(BinaryPrimitives.ReverseEndianness(value));
+            toSend.Write(val);
+        }
+
         protected void WriteInt32(int value)
         {
             var val = BitConverter.GetBytes(BinaryPrimitives.ReverseEndianness(value));

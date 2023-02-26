@@ -12,6 +12,8 @@ public interface Context {
     Future<Integer> write(PGServerMessage readyForQuery,Future<Integer> prev);
 
     void add(Object pgClientMessage);
+    void put(String id,Object data);
+    Object get(String id);
     Object get(Predicate<Object> test);
     Connection getConnection();
 }

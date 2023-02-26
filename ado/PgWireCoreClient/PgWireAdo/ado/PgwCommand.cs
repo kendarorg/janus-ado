@@ -15,6 +15,8 @@ namespace PgWireAdo.ado;
 public class PgwCommand : DbCommand
 {
     private List<RowDescriptor> _fields;
+    private string _statementId;
+    private string _portalId;
 
     public PgwCommand(DbConnection dbConnection)
     {
@@ -140,7 +142,7 @@ public class PgwCommand : DbCommand
     private void CallQuery()
     {
         var stream = ((PgwConnection)DbConnection).Stream;
-        if (DbParameterCollection == null || DbParameterCollection.Count == 0)
+        /*if (DbParameterCollection == null || DbParameterCollection.Count == 0)
         {
             if (CommandType == CommandType.TableDirect)
             {
@@ -153,8 +155,30 @@ public class PgwCommand : DbCommand
                 queryMessage.Write(stream);
             }
         }
-        else
+        else*/
         {
+            var query = CommandText;
+            if (CommandType == CommandType.TableDirect)
+            {
+                query = "SELECT * FROM " + CommandText;
+            }
+            _statementId = Guid.NewGuid().ToString();
+            var queryMessage =
+                new ParseMessage(_statementId, query, this.Parameters);
+            queryMessage.Write(stream);
+            //TODO READ ParseCompleted
+            _portalId = Guid.NewGuid().ToString();
+            //TODO WRITE Bind with _portalId && _statementID
+            //TODO READ BindCompleted
+            //TODO WRITE Describe P _portalId
+            //TODO READ RowDescription
+            //TODO WRITE Execute _portalId [NUMBER OF ROWS]
+            //TODO READ [NUMBER OF ROWS] DataRow
+            //TODO WAIT CommandComplete (no more rows) 
+            //TODO      PortalSuspend (other rows
+            //TODO WRITE Sync
+            //TODO READ Ready for query
+
             throw new NotImplementedException();
         }
 

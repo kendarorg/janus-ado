@@ -67,6 +67,7 @@ public class ParseMessage implements PGClientMessage {
         var length = buffer.getInt(prev+1);
         buffer.position(1+4);
         var psName = PGClientMessage.extractString(buffer);
+        System.out.println("[SERVER] received PSNAME "+psName);
         var query = PGClientMessage.extractString(buffer);
         var paramsCount = buffer.getShort();
         var paramsOids = new int[paramsCount];
@@ -103,14 +104,18 @@ public class ParseMessage implements PGClientMessage {
             System.out.println("[SERVER] Parse: "+query);
             client.add((PGClientMessage)this);
 
+            var statementName = this.psName;
+
             ParseCompleted parseCompleted = new ParseCompleted();
             writeResult = client.write(parseCompleted,prev);
             BindMessage bind = new BindMessage();
             if(bind.isMatching(buffer)) {
                 System.out.println("[SERVER] ParseMessage-Received: BindMessage");
                 binds=(BindMessage) bind.decode(buffer);
-
             }
+            var portal = bind.getDestinationPortalName();
+
+            client.put(statementName+"_"+portal,this);
             BindCompleted bindCompleted = new BindCompleted();
             writeResult = client.write(bindCompleted,writeResult);
             DescribeMessage describeMessage = new DescribeMessage();
@@ -119,12 +124,14 @@ public class ParseMessage implements PGClientMessage {
                 System.out.println("[SERVER] ParseMessage-Received: DescribeMessage");
                 describes.add((DescribeMessage) describeMessage.decode(buffer));
             }
-            ExecuteMessage executeMessage = new ExecuteMessage();
+            ExecuteMessage executeMessage = new ExecuteMessage(psName,portal);
             if(executeMessage.isMatching(buffer)){
                 System.out.println("[SERVER] ParseMessage-Received: ExecuteMessage");
-                var message = executeMessage.decode(buffer);
+                var message = (ExecuteMessage)executeMessage.decode(buffer);
+                message.setPsName(statementName);
                 message.handle(client,writeResult);
             }
+
 
             SyncMessage syncMessage = new SyncMessage();
             if(syncMessage.isMatching(buffer)){
