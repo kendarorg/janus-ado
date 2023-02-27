@@ -4,6 +4,8 @@ import org.example.SqlStringType;
 import org.example.StringParser;
 import org.example.messages.QueryMessage;
 import org.example.messages.commons.ErrorResponse;
+import org.example.messages.commons.ReadyForQuery;
+import org.example.messages.extendedquery.BindMessage;
 import org.example.messages.extendedquery.ParseMessage;
 import org.example.messages.querymessage.CommandComplete;
 import org.example.messages.querymessage.DataRow;
@@ -14,6 +16,7 @@ import org.example.server.Context;
 import java.nio.ByteBuffer;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class RealResultBuilder {
@@ -90,54 +93,32 @@ public class RealResultBuilder {
             var query = parseMessage.getQuery();
 
 
-            try {
-                if (query.startsWith(":JANUS:")) {
-                    return handleSpecialQuery(conn, query, client);
-                }
-
-                var result = false;
-                Statement st = null;
-                if (parseMessage.getBinds() != null) {
-                    var bind = parseMessage.getBinds();
-                    if (bind.getParameterValues().size() > 0) {
-                        st = conn.prepareStatement(query);
-                        var pmd = ((PreparedStatement) st).getParameterMetaData();
-                        for (var i = 0; i < bind.getParameterValues().size(); i++) {
-                            var clName = pmd.getParameterClassName(i + 1);
-                            var clPrec = pmd.getPrecision(i + 1);
-                            var clScale = pmd.getScale(i + 1);
-                            var sqlType = pmd.getParameterType(i + 1);
-                            Class<?> clReal;
-                            try {
-                                clReal = Class.forName(clName);
-                                ((PreparedStatement) st).setObject(i + 1,
-                                        PgwConverter.toPgWire(
-                                                bind.getParamFormatCodes()[i],
-                                                clReal,
-                                                bind.getParameterValues().get(i),
-                                                clPrec, clScale),
-                                        sqlType, clScale);
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
+            var parsed = StringParser.getTypes(query);
+            if (StringParser.isUnknown(parsed) || StringParser.isMixed(parsed) || parsed.size()==1) {
+                var rs = buildTheResultForSingleQuery(client, prev, psName, portal, maxRecords, conn, query);
+//                var rfq = new ReadyForQuery();
+//                rs = client.write(rfq,rs);
+                return rs;
+            } else {
+                Future<Integer> rs=null;
+                for (var single : parsed) {
+                    var tmp = //executeQuery(conn, single.getValue(), single.getType(),client,prev);
+                            buildTheResultForSingleQuery(client, prev, psName, portal, maxRecords, conn, single.getValue());
+                    if(tmp!=null){
+                        try {
+                            tmp.get();
+                        } catch (Exception e) {
 
                         }
-                        result = ((PreparedStatement) st).execute();
+                        rs=tmp;
                     }
                 }
-                if (st == null) {
-                    st = conn.createStatement();
-                    result = st.execute(query);
-                }
-                if (result) {
-                    return loadResultset(client, st, prev,psName,portal,maxRecords);
-                }
-            } catch (SQLException e) {
-                ErrorResponse errorResponse = new ErrorResponse(e.getMessage());
-                prev = client.write(errorResponse, prev);
+//                var rfq = new ReadyForQuery();
+//                rs = client.write(rfq,rs);
+                return rs;
             }
-            CommandComplete commandComplete = new CommandComplete(query);
-            return client.write(commandComplete, prev);
+
+
         }else{
             if(maxRecords==0){
                 maxRecords=Integer.MAX_VALUE;
@@ -159,6 +140,61 @@ public class RealResultBuilder {
             CommandComplete commandComplete = new CommandComplete("SELECT " + count);
             return client.write(commandComplete,writeResult);
         }
+    }
+
+    private static Future<Integer> buildTheResultForSingleQuery(Context client, Future<Integer> prev, String psName, String portal, int maxRecords, Connection conn, String query) {
+        try {
+            if (query.startsWith(":JANUS:")) {
+                return handleSpecialQuery(conn, query, client);
+            }
+
+            var result = false;
+            Statement st = null;
+            var bind = (BindMessage) client.get("bind_"+ psName +"_"+ portal);
+            if (bind != null) {
+                if (bind.getParameterValues().size() > 0) {
+                    st = conn.prepareStatement(query);
+                    var pmd = ((PreparedStatement) st).getParameterMetaData();
+                    for (var i = 0; i < bind.getParameterValues().size(); i++) {
+                        var clName = pmd.getParameterClassName(i + 1);
+                        var clPrec = pmd.getPrecision(i + 1);
+                        var clScale = pmd.getScale(i + 1);
+                        var sqlType = pmd.getParameterType(i + 1);
+                        Class<?> clReal;
+                        try {
+                            clReal = Class.forName(clName);
+                            ((PreparedStatement) st).setObject(i + 1,
+                                    PgwConverter.toPgWire(
+                                            bind.getParamFormatCodes()[i],
+                                            clReal,
+                                            bind.getParameterValues().get(i),
+                                            clPrec, clScale),
+                                    sqlType, clScale);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+
+                    }
+                    result = ((PreparedStatement) st).execute();
+                }
+            }
+            if (st == null) {
+                st = conn.createStatement();
+                result = st.execute(query);
+            }
+            if (result) {
+                return loadResultset(client, st, prev, psName, portal, maxRecords);
+            }else{
+                var count = st.getUpdateCount();
+                CommandComplete commandComplete = new CommandComplete("RESULT "+count);
+                return client.write(commandComplete, prev);
+            }
+        } catch (SQLException e) {
+            ErrorResponse errorResponse = new ErrorResponse(e.getMessage());
+            prev = client.write(errorResponse, prev);
+        }
+        CommandComplete commandComplete = new CommandComplete(query);
+        return client.write(commandComplete, prev);
     }
 
 
@@ -225,10 +261,10 @@ public class RealResultBuilder {
             var val = query.split(":");
             if (val[2].isEmpty()) {
                 var savepoint = conn.setSavepoint();
-                client.add(savepoint);
+                client.put("savepoint",savepoint);
             } else {
                 var savepoint = conn.setSavepoint(val[2]);
-                client.add(savepoint);
+                client.put("savepoint_"+val[2],savepoint);
             }
         } else if (query.startsWith("JANUS:RELEASE_SAVEPOINT:")) {
             var val = query.split(":");
@@ -249,17 +285,11 @@ public class RealResultBuilder {
     }
 
     private static Savepoint getSavepoint(Context client, String[] val) {
-        var svp = (Savepoint) client.get((o) -> {
-            if (!(o instanceof Savepoint)) return false;
-            var sp = (Savepoint) o;
-            var name = "";
-            try {
-                name = sp.getSavepointName();
-            } catch (Exception ex) {
-            }
-            return name.equalsIgnoreCase(val[2]);
-        });
-        return svp;
+        if(val.length>=3){
+            return (Savepoint)client.get("savepoint_"+val[2]);
+        }else{
+            return (Savepoint)client.get("savepoint");
+        }
     }
 
 

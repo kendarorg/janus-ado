@@ -1,6 +1,7 @@
 package org.example.messages.extendedquery;
 
 import org.example.messages.PGClientMessage;
+import org.example.messages.extendedquery.responses.BindCompleted;
 import org.example.server.Context;
 
 import java.nio.ByteBuffer;
@@ -40,6 +41,8 @@ public class BindMessage implements PGClientMessage {
     }
     public BindMessage(String destinationPortalName, String sourcePsName, short[] paramFormatCodes, ArrayList<Object> parameterValues, short[] resultColumnFormatCodes) {
 
+        if(sourcePsName==null)sourcePsName="";
+        if(destinationPortalName==null)destinationPortalName="";
         this.destinationPortalName = destinationPortalName;
         this.sourcePsName = sourcePsName;
         this.paramFormatCodes = paramFormatCodes;
@@ -93,12 +96,17 @@ public class BindMessage implements PGClientMessage {
 
     @Override
     public void handle(Context client, Future<Integer> prev) {
-        if(prev!=null) {
+        //if(prev!=null) {
             try {
-                prev.get();
+                client.put("bind_"+sourcePsName+"_"+destinationPortalName,this);
+                client.put("bind_"+destinationPortalName,sourcePsName);
+                client.put("bind_"+sourcePsName,destinationPortalName);
+                BindCompleted bindCompleted = new BindCompleted();
+                var writeResult = client.write(bindCompleted,prev);
+                writeResult.get();
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
             }
-        }
+        //}
     }
 }

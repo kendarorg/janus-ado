@@ -33,9 +33,7 @@ public class ParseMessage implements PGClientMessage {
         return oid;
     }
 
-    public BindMessage getBinds() {
-        return binds;
-    }
+
 
     public ArrayList<DescribeMessage> getDescribes() {
         return describes;
@@ -45,7 +43,6 @@ public class ParseMessage implements PGClientMessage {
     private short paramsCount;
     private int[] oid;
     private ByteBuffer buffer;
-    private BindMessage binds;
     private ArrayList<DescribeMessage> describes;
 
     public ParseMessage(){
@@ -65,9 +62,9 @@ public class ParseMessage implements PGClientMessage {
     public PGClientMessage decode(ByteBuffer buffer) {
         var prev = buffer.position();
         var length = buffer.getInt(prev+1);
-        buffer.position(1+4);
+        buffer.position(prev+1+4);
         var psName = PGClientMessage.extractString(buffer);
-        System.out.println("[SERVER] received PSNAME "+psName);
+        //System.out.println("[SERVER] received PSNAME "+psName);
         var query = PGClientMessage.extractString(buffer);
         var paramsCount = buffer.getShort();
         var paramsOids = new int[paramsCount];
@@ -102,20 +99,22 @@ public class ParseMessage implements PGClientMessage {
             buffer.position(buffer.limit());
         }else {
             System.out.println("[SERVER] Parse: "+query);
-            client.add((PGClientMessage)this);
+            //client.add((PGClientMessage)this);
 
             var statementName = this.psName;
+            var portal = "";
 
+            client.put("statement_"+statementName,this);
             ParseCompleted parseCompleted = new ParseCompleted();
             writeResult = client.write(parseCompleted,prev);
-            BindMessage bind = new BindMessage();
+            /*BindMessage bind = new BindMessage();
             if(bind.isMatching(buffer)) {
                 System.out.println("[SERVER] ParseMessage-Received: BindMessage");
                 binds=(BindMessage) bind.decode(buffer);
+                portal = bind.getDestinationPortalName();
             }
-            var portal = bind.getDestinationPortalName();
 
-            client.put(statementName+"_"+portal,this);
+
             BindCompleted bindCompleted = new BindCompleted();
             writeResult = client.write(bindCompleted,writeResult);
             DescribeMessage describeMessage = new DescribeMessage();
@@ -123,22 +122,22 @@ public class ParseMessage implements PGClientMessage {
             while(describeMessage.isMatching(buffer)) {
                 System.out.println("[SERVER] ParseMessage-Received: DescribeMessage");
                 describes.add((DescribeMessage) describeMessage.decode(buffer));
-            }
-            ExecuteMessage executeMessage = new ExecuteMessage(psName,portal);
+            }*/
+            /*ExecuteMessage executeMessage = new ExecuteMessage(psName,portal);
             if(executeMessage.isMatching(buffer)){
                 System.out.println("[SERVER] ParseMessage-Received: ExecuteMessage");
                 var message = (ExecuteMessage)executeMessage.decode(buffer);
                 message.setPsName(statementName);
                 message.handle(client,writeResult);
-            }
+            }*/
 
 
-            SyncMessage syncMessage = new SyncMessage();
+            /*SyncMessage syncMessage = new SyncMessage();
             if(syncMessage.isMatching(buffer)){
                 System.out.println("[SERVER] ParseMessage-Received: SyncMessage");
                 var message = syncMessage.decode(buffer);
                 message.handle(client,writeResult);
-            }
+            }*/
 
 
             // Finally, write ReadyForQuery
@@ -149,7 +148,7 @@ public class ParseMessage implements PGClientMessage {
         try {
             writeResult.get();
         } catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         }
     }
 }

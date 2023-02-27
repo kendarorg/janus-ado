@@ -13,8 +13,10 @@ public class SyncMessage implements PGClientMessage{
 
     @Override
     public PGClientMessage decode(ByteBuffer buffer) {
+        var prev= buffer.position();
         buffer.get();
         buffer.getInt();
+        buffer.position(prev+5);
         return new SyncMessage();
     }
 

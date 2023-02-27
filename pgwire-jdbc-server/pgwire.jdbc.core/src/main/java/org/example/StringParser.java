@@ -19,6 +19,7 @@ public class StringParser {
         select.put("show",SqlStringType.SELECT);
         select.put("explain",SqlStringType.SELECT);
         select.put("describe",SqlStringType.SELECT);
+        select.put("fetch",SqlStringType.SELECT);
 
         select.put("update",SqlStringType.UPDATE);
         select.put("insert",SqlStringType.UPDATE);
@@ -32,6 +33,7 @@ public class StringParser {
         select.put("set",SqlStringType.UPDATE);
         select.put("truncate",SqlStringType.UPDATE);
         select.put(":janus:",SqlStringType.UPDATE);
+        select.put("declare",SqlStringType.UPDATE);
 
         select.put("call",SqlStringType.CALL);
         select.put("execute",SqlStringType.CALL);
@@ -154,5 +156,16 @@ public class StringParser {
     }
 
 
+    public static boolean isMixed(List<SqlParseResult> parsed) {
+        SqlStringType founded = SqlStringType.NONE;
+        for (var single :parsed) {
+            if(founded==SqlStringType.NONE){
+                founded=single.getType();
+            }
+            if(single.getType()!=founded)return true;
+
+        }
+        return false;
+    }
 }
 

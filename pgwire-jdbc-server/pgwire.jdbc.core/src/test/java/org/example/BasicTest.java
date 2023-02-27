@@ -59,20 +59,21 @@ public class BasicTest {
     void testSimple() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
 
         String url = POSTGRES_FAKE_CONNECTION_STRING;
-        Connection conn = DriverManager.getConnection(url);
+        try(Connection conn = DriverManager.getConnection(url)) {
 
-        conn.createStatement().execute("create table if not exists test(id int, name varchar)");
-        conn.createStatement().execute("insert into test values(1,'fuffa')");
-        conn.createStatement().execute("insert into test values(2,'faffa')");
-        var result = conn.createStatement().executeQuery("select * FROM test");
-        assertTrue(result.next());
-        assertEquals(1,result.getInt(1));
-        assertEquals("fuffa",result.getString(2));
-        assertTrue(result.next());
-        assertEquals(2,result.getInt(1));
-        assertEquals("faffa",result.getString(2));
+            conn.createStatement().execute("create table if not exists test1(id int, name varchar)");
+            conn.createStatement().execute("insert into test1 values(1,'fuffa')");
+            conn.createStatement().execute("insert into test1 values(2,'faffa')");
+            var result = conn.createStatement().executeQuery("select * FROM test1");
+            assertTrue(result.next());
+            assertEquals(1, result.getInt(1));
+            assertEquals("fuffa", result.getString(2));
+            assertTrue(result.next());
+            assertEquals(2, result.getInt(1));
+            assertEquals("faffa", result.getString(2));
 
-        conn.createStatement().execute("drop table test");
+            conn.createStatement().execute("drop table test1");
+        }
     }
 
     @Test
@@ -146,19 +147,20 @@ public class BasicTest {
 
         //conn.prepareStatement("create table test(id int)").execute();
         String url = POSTGRES_FAKE_CONNECTION_STRING;
-        Connection conn = DriverManager.getConnection(url);
+        try(Connection conn = DriverManager.getConnection(url)) {
 
-        conn.createStatement().execute("create table if not exists test(id int, val REAL)");
-        conn.createStatement().execute("insert into test values(1,1.72)");
-        conn.createStatement().execute("insert into test values(2,3.75)");
-        var ps = conn.prepareStatement("select * FROM test where val=?");
-        ps.setFloat(1,1.72F);
-        var result = ps.executeQuery();
-        assertTrue(result.next());
-        assertEquals(1,result.getInt(1));
-        assertEquals(1.72F,result.getFloat(2));
+            conn.createStatement().execute("create table if not exists test4(id int, VAL REAL)");
+            conn.createStatement().execute("insert into test4 values(1,1.72)");
+            conn.createStatement().execute("insert into test4 values(2,3.75)");
+            var ps = conn.prepareStatement("select * FROM test4 where VAL=?");
+            ps.setFloat(1, 1.72F);
+            var result = ps.executeQuery();
+            assertTrue(result.next());
+            assertEquals(1, result.getInt(1));
+            assertEquals(1.72F, result.getFloat(2));
 
-        conn.createStatement().execute("drop table test");
+            conn.createStatement().execute("drop table test4");
+        }
     }
 
     @Test
@@ -169,17 +171,17 @@ public class BasicTest {
         String url = POSTGRES_FAKE_CONNECTION_STRING;
         Connection conn = DriverManager.getConnection(url);
 
-        conn.createStatement().execute("create table if not exists test(id int, val DATE)");
-        conn.createStatement().execute("insert into test values(1,'2020-12-25')");
-        conn.createStatement().execute("insert into test values(2,'2021-12-25')");
-        var ps = conn.prepareStatement("select * FROM test where val=?");
+        conn.createStatement().execute("create table if not exists test3(id int, val DATE)");
+        conn.createStatement().execute("insert into test3 values(1,'2020-12-25')");
+        conn.createStatement().execute("insert into test3 values(2,'2021-12-25')");
+        var ps = conn.prepareStatement("select * FROM test3 where val=?");
         ps.setDate(1,Date.valueOf("2020-12-25"));
         var result = ps.executeQuery();
         assertTrue(result.next());
         assertEquals(1,result.getInt(1));
         assertEquals("2020-12-25",result.getDate(2).toString());
 
-        conn.createStatement().execute("drop table test");
+        conn.createStatement().execute("drop table test3");
     }
 
     @Test
@@ -201,11 +203,28 @@ public class BasicTest {
         System.out.println(result.getInt(1)+"-"+result.getString(2));
 
 
-        var ps2 = conn.prepareStatement("select * FROM test where name='fuffa'");
+        var ps2 = conn.prepareStatement("select * FROM test where name='faffa'");
         var result2 = ps2.executeQuery();
         result2.next();
         System.out.println(result2.getInt(1)+"-"+result2.getString(2));
 
         conn.createStatement().execute("drop table test");
+    }
+
+
+    @Test
+    void stupidTest() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+
+
+        String url = POSTGRES_FAKE_CONNECTION_STRING;
+        Connection conn = DriverManager.getConnection(url);
+
+        var ps = conn.prepareStatement("select 1");
+        var result = ps.executeQuery();
+        result.next();
+        System.out.println(result.getInt(1));
+
+
+
     }
 }

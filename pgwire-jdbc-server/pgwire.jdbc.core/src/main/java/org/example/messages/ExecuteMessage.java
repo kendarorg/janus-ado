@@ -1,6 +1,7 @@
 package org.example.messages;
 
 import org.example.builders.RealResultBuilder;
+import org.example.messages.commons.ReadyForQuery;
 import org.example.messages.extendedquery.ParseMessage;
 import org.example.server.Context;
 
@@ -26,14 +27,14 @@ public class ExecuteMessage implements PGClientMessage {
     private String psName;
 
     public ExecuteMessage(String portal, int maxRecords) {
-
+        if(portal==null)portal="";
         this.portal = portal;
         this.maxRecords = maxRecords;
     }
 
-    public ExecuteMessage(String psName, String sourcePortal) {
-        this.psName = psName;
-    }
+    //public ExecuteMessage(String psName, String sourcePortal) {
+    //    this.psName = psName;
+    //}
 
     public ExecuteMessage() {
 
@@ -63,9 +64,12 @@ public class ExecuteMessage implements PGClientMessage {
 
         try {
             Future<Integer> writeResult = null;
-            var msg = client.get(psName+"_"+portal);
-            writeResult = RealResultBuilder.buildRealResultPs((ParseMessage) msg,client,prev,psName, portal,maxRecords);
+            psName = (String)client.get("bind_"+portal);
+            var msg = (ParseMessage)client.get("statement_"+psName);
+            writeResult = RealResultBuilder.buildRealResultPs( msg,client,prev,psName, portal,maxRecords);
 
+            /*var rqq = new ReadyForQuery();
+            writeResult = client.write(rqq,writeResult);*/
             writeResult.get();
         } catch (Exception e) {
             e.printStackTrace();

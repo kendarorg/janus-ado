@@ -153,6 +153,9 @@ public class PgwConverter {
             case("char"):
                 return ByteBuffer.allocate(1).put(rs.getByte(i));
             default:
+                if(rs.getString(i)==null){
+                    return ByteBuffer.allocate(0);
+                }
                 return ByteBuffer.wrap(rs.getString(i).getBytes(StandardCharsets.UTF_8));
         }
     }

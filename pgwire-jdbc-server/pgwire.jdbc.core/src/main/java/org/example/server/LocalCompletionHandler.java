@@ -2,6 +2,8 @@ package org.example.server;
 
 import org.example.messages.*;
 import org.example.messages.commons.ErrorResponse;
+import org.example.messages.extendedquery.BindMessage;
+import org.example.messages.extendedquery.DescribeMessage;
 import org.example.messages.extendedquery.ParseMessage;
 
 import java.io.IOException;
@@ -55,6 +57,9 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
         messages.add(new StartupMessage());
         messages.add(new QueryMessage());
         messages.add(new ParseMessage());
+        messages.add(new BindMessage());
+        messages.add(new DescribeMessage());
+        messages.add(new SyncMessage());
         messages.add(new TerminateMessage());
         messages.add(new ExecuteMessage());
     }
@@ -157,15 +162,17 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
             }catch (Exception ex2){
 
             }
-            return client.write(buffer);
+            var result = new CompletableFuture<Integer>();
+            result.complete(0);
+            return result;
 
         }
     }
 
-    @Override
-    public void add(Object pgClientMessage) {
-        storage.add(pgClientMessage);
-    }
+    //@Override
+    //public void add(Object pgClientMessage) {
+        //storage.add(pgClientMessage);
+   // }
 
     private Map<String,Object> statPortal=new ConcurrentHashMap<>();
 
@@ -179,7 +186,7 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
         return statPortal.get(id.toLowerCase(Locale.ROOT));
     }
 
-    @Override
+    /*@Override
     public Object get(Predicate<Object> test) {
         Object item = null;
         item = storage.peek();
@@ -198,7 +205,7 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
         }finally {
             storage.remove(item);
         }
-    }
+    }*/
 
     public Connection getConnection() {
         return conn;
