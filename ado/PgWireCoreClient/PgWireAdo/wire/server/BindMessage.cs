@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System.Buffers.Binary;
+using System.Data;
 using System.Data.Common;
 using PgWireAdo.ado;
 using PgWireAdo.utils;
@@ -45,7 +46,7 @@ public class BindMessage : PgwServerMessage
             }
             else
             {
-                parsLengths += 4 + ((byte[])pgwParameter.Value).Length;
+                parsLengths += 4 + PgwConverter.toBytes(pgwParameter.Value).Length;
             }
 
         }
@@ -87,8 +88,9 @@ public class BindMessage : PgwServerMessage
             }
             else
             {
-                WriteInt32(((byte[])pgwParameter.Value).Length);
-                Write((byte[])pgwParameter.Value);
+                var bval = PgwConverter.toBytes(pgwParameter.Value);
+                WriteInt32(bval.Length);
+                Write(bval);
             }
 
         }

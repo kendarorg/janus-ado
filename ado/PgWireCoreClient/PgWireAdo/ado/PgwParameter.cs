@@ -16,6 +16,7 @@ namespace PgWireAdo.ado
         {
             this.ParameterName = parameterName;
             this.Value = value;
+            this.Direction = ParameterDirection.Input;
         }
 
     }
@@ -26,16 +27,19 @@ namespace PgWireAdo.ado
         {
             this.ParameterName = parameterName;
             this.DbType = dbType;
+            this.Direction = ParameterDirection.Input;
         }
 
         public PgwParameter(object value)
         {
             this.Value= value;
+            this.Direction = ParameterDirection.Input;
         }
 
         public PgwParameter()
         {
-            
+            this.Direction = ParameterDirection.Input;
+
         }
 
         public override DbType DbType { get; set; }

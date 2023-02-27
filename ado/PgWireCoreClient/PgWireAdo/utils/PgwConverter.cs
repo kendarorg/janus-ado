@@ -1,5 +1,7 @@
-﻿using System.ComponentModel;
+﻿using System.Buffers.Binary;
+using System.ComponentModel;
 using System.Data;
+using PgWireAdo.ado;
 using PgWireAdo.wire.client;
 
 namespace PgWireAdo.utils
@@ -67,6 +69,24 @@ namespace PgWireAdo.utils
                 throw new Exception();
                 //from bytes
             }
+        }
+
+        public static byte[] toBytes(object v)
+        {
+            if (v.GetType() == typeof(byte[]))
+            {
+                return (byte[])v;
+            }
+            else if(v.GetType() == typeof(long))
+            {
+                return BitConverter.GetBytes(BinaryPrimitives.ReverseEndianness((long)v));
+            }
+            else if (v.GetType() == typeof(int))
+            {
+                return BitConverter.GetBytes(BinaryPrimitives.ReverseEndianness((int)v));
+            }
+
+            throw new NotImplementedException();
         }
     }
 }

@@ -150,7 +150,7 @@ public class RealResultBuilder {
 
             var result = false;
             Statement st = null;
-            var bind = (BindMessage) client.get("bind_"+ psName +"_"+ portal);
+            var bind = (BindMessage) client.get("bind_"+ portal +"_"+ psName);
             if (bind != null) {
                 if (bind.getParameterValues().size() > 0) {
                     st = conn.prepareStatement(query);

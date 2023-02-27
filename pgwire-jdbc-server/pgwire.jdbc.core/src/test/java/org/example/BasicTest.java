@@ -164,6 +164,25 @@ public class BasicTest {
     }
 
     @Test
+    void testNpg() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+
+
+        //conn.prepareStatement("create table test(id int)").execute();
+        String url = POSTGRES_FAKE_CONNECTION_STRING;
+        try(Connection conn = DriverManager.getConnection(url)) {
+
+
+            var ps = conn.prepareStatement("SELECT ?");
+            ps.setInt(1, 4);
+            var result = ps.executeQuery();
+            assertTrue(result.next());
+            assertEquals(4, result.getInt(1));
+
+            conn.createStatement().execute("drop table test4");
+        }
+    }
+
+    @Test
     void testDate() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
 
 
