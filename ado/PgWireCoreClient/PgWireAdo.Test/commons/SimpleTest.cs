@@ -65,12 +65,12 @@ namespace Npgsql.Tests;
             cmd.ExecuteNonQuery();
 
             cmd = conn.CreateCommand();
-            cmd.CommandText = "select * FROM test where name=@name";
+            cmd.CommandText = "select * FROM test where name=?";
             cmd.Parameters.AddWithValue("@val1", "test2");
             var reader = cmd.ExecuteReader();
             Assert.True(reader.HasRows);
             Assert.True(reader.Read());
-            Assert.AreEqual(1, reader.GetInt32(0));
+            Assert.AreEqual(2, reader.GetInt32(0));
             Assert.AreEqual("test2", reader.GetString(1));
             Assert.False(reader.Read());
 

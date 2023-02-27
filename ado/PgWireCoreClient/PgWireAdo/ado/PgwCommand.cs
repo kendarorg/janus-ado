@@ -22,16 +22,21 @@ public class PgwCommand : DbCommand
     {
         DbParameterCollection = new PgwParameterCollection();
         DbConnection = dbConnection;
+        CommandText = String.Empty;
+        CommandType = CommandType.Text;
     }
 
     public PgwCommand()
     {
         DbParameterCollection = new PgwParameterCollection();
+        CommandText = String.Empty;
+        CommandType = CommandType.Text;
     }
 
     public PgwCommand(string commandText, DbConnection conn = null, DbTransaction dbTransaction = null)
     {
         DbParameterCollection = new PgwParameterCollection();
+        CommandType = CommandType.Text;
         CommandText = commandText;
         DbConnection = conn;
         DbTransaction = dbTransaction;
@@ -155,6 +160,7 @@ public class PgwCommand : DbCommand
     private void CallQuery()
     {
         var stream = ((PgwConnection)DbConnection).Stream;
+        var errorMessage = new ErrorResponse();
         /*if (DbParameterCollection == null || DbParameterCollection.Count == 0)
         {
             if (CommandType == CommandType.TableDirect)
@@ -169,45 +175,52 @@ public class PgwCommand : DbCommand
             }
         }
         else*/
-        
-            var query = CommandText;
-            if (CommandType == CommandType.TableDirect)
-            {
-                query = "SELECT * FROM " + CommandText;
-            }
-            _statementId = Guid.NewGuid().ToString();
-            var queryMessage =
-                new ParseMessage(_statementId, query, this.Parameters);
-            queryMessage.Write(stream);
-            var parseComplete = new ParseComplete();
-            if (parseComplete.IsMatching(stream))
-            {
-                parseComplete.Read(stream);
-            }
-            _portalId = Guid.NewGuid().ToString();
-            var bindMessage = new BindMessage(_statementId, _portalId, DbParameterCollection);
-            bindMessage.Write(stream);
-            var bindComplete = new BindComplete();
-            if (bindComplete.IsMatching(stream))
-            {
-                bindComplete.Read(stream);
-            }
 
-            var executeMessage = new ExecuteMessage(_portalId,0);
-            executeMessage.Write(stream);
-            //TODO WRITE Describe P _portalId
-            //TODO READ RowDescription
-            //TODO WRITE Execute _portalId [NUMBER OF ROWS]
-            //TODO READ [NUMBER OF ROWS] DataRow
-            //TODO WAIT CommandComplete (no more rows) 
-            //TODO      PortalSuspend (other rows
-            //TODO WRITE Sync
-            //TODO READ Ready for query
+        var query = CommandText;
+        if (CommandType == CommandType.TableDirect)
+        {
+            query = "SELECT * FROM " + CommandText;
+        }
 
+        if (query == null || query.Length == 0)
+        {
+            throw new InvalidOperationException("Missing query");
+        }
+        _statementId = Guid.NewGuid().ToString();
+        var queryMessage =
+            new ParseMessage(_statementId, query, this.Parameters);
+        queryMessage.Write(stream);
+        var parseComplete = new ParseComplete();
+        if (parseComplete.IsMatching(stream))
+        {
+            parseComplete.Read(stream);
+        }
+        _portalId = Guid.NewGuid().ToString();
+        var bindMessage = new BindMessage(_statementId, _portalId, DbParameterCollection);
+        bindMessage.Write(stream);
+        var bindComplete = new BindComplete();
+        if (bindComplete.IsMatching(stream))
+        {
+            bindComplete.Read(stream);
+        }
+
+        var executeMessage = new ExecuteMessage(_portalId,0);
+        executeMessage.Write(stream);
+        //TODO WRITE Describe P _portalId
+        //TODO READ RowDescription
+        //TODO WRITE Execute _portalId [NUMBER OF ROWS]
+        //TODO READ [NUMBER OF ROWS] DataRow
+        //TODO WAIT CommandComplete (no more rows) 
+        //TODO      PortalSuspend (other rows
+        //TODO WRITE Sync
+        //TODO READ Ready for query
+        if (errorMessage.IsMatching(stream))
+        {
+            errorMessage.Read(stream);
+        }
     
 
         var rowDescription = new RowDescription();
-        var errorMessage = new ErrorResponse();
         if (rowDescription.IsMatching(stream))
         {
             rowDescription.Read(stream);

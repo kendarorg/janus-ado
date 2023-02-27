@@ -3,6 +3,7 @@ using System.Data;
 using System.Data.Common;
 using PgWireAdo.utils;
 using PgWireAdo.wire.client;
+using PgWireAdo.wire.server;
 
 namespace PgWireAdo.ado;
 
@@ -32,7 +33,13 @@ public class PgwDataReader :DbDataReader
 
     public override int FieldCount => _fields.Count;
 
-    public override object this[int ordinal] => PgwConverter.convert(_fields[ordinal],_currentRow[ordinal]);
+    public override object this[int ordinal]
+    {
+        get
+        {
+            return  PgwConverter.convert(_fields[ordinal], _currentRow[ordinal]);
+        }
+    }
 
     public override object this[string name] =>this[GetOrdinal(name)];
 
@@ -180,42 +187,68 @@ public class PgwDataReader :DbDataReader
     /// </remarks>
     public override bool Read()
     {
-        if ((_behavior & CommandBehavior.SingleRow) != 0)
-        {
-            if (_currentRow != null)
+            if (DbConnection.State == ConnectionState.Closed) return false;
+            if ((_behavior & CommandBehavior.SingleRow) != 0)
             {
+                if (_currentRow != null)
+                {
+                    return false;
+                }
+            }
+
+            var stream = ((PgwConnection)DbConnection).Stream;
+
+            var dataRow = new PgwDataRow(_fields);
+            if (dataRow.IsMatching(stream))
+            {
+                dataRow.Read(stream);
+                if (dataRow.Data.Count > 0)
+                {
+                    _currentRow = dataRow.Data;
+                    return true;
+                }
+
+            }
+
+            var commandComplete = new CommandComplete();
+            if (commandComplete.IsMatching(stream))
+            {
+                commandComplete.Read(stream);
+                if ((_behavior & CommandBehavior.CloseConnection) != 0)
+                {
+                    DbConnection.Close();
+                    return false;
+                }
+
+                var sync = new SyncMessage();
+                sync.Write(stream);
+                var readyForQuery = new ReadyForQuery();
+                if (readyForQuery.IsMatching(stream))
+                {
+                    readyForQuery.Read(stream);
+                }
+
                 return false;
             }
-        }
-        var stream = ((PgwConnection)DbConnection).Stream;
-        var dataRow = new PgwDataRow(_fields);
-        var commandComplete = new CommandComplete();
-        if (dataRow.IsMatching(stream))
-        {
-            dataRow.Read(stream);
-            if (dataRow.Data.Count > 0)
-            {
-                
-                
-                _currentRow = dataRow.Data;
-                return true;
-            }
-            
-        }
-        else if (commandComplete.IsMatching(stream))
-        {
-            commandComplete.Read(stream);
+
             if ((_behavior & CommandBehavior.CloseConnection) != 0)
             {
                 DbConnection.Close();
+                return false;
             }
-            return false;
-        }
-        if ((_behavior & CommandBehavior.CloseConnection) != 0)
-        {
-            DbConnection.Close();
-        }
-        return false;
+            else
+            {
+                var sync = new SyncMessage();
+                sync.Write(stream);
+                var readyForQuery = new ReadyForQuery();
+                if (readyForQuery.IsMatching(stream))
+                {
+                    readyForQuery.Read(stream);
+                }
+
+                return false;
+            }
+        
     }
 
     public override Task<bool> ReadAsync(CancellationToken cancellationToken)

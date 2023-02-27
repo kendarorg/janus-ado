@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -89,11 +90,17 @@ public class PgwConnection : DbConnection
 
     public override void Close()
     {
+        _state = ConnectionState.Closed;
+        if (_stream == null)
+        {
+            return;
+        }
         var terminate = new TerminateMessage();
         terminate.Write(_stream);
-        _state = ConnectionState.Closed;
         _stream.Dispose();
         _client.Dispose();
+        _stream = null;
+        _client = null;
 
     }
 
@@ -110,10 +117,23 @@ public class PgwConnection : DbConnection
 
     #region TOIMPLEMENT
 
-    
     protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
     {
-        throw new NotImplementedException();
+        var result= new PgwTransaction(this, isolationLevel);
+        var queryMessage = new QueryMessage("JANUS:BEGIN_TRANSACTION");
+        queryMessage.Write(Stream);
+        var commandComplete = new CommandComplete();
+        if (commandComplete.IsMatching(Stream))
+        {
+            commandComplete.Read(Stream);
+        }
+        var readyForQuery = new ReadyForQuery();
+        if (readyForQuery.IsMatching(Stream))
+        {
+            readyForQuery.Read(Stream);
+        }
+
+        return result;
     }
 
     public override void ChangeDatabase(string databaseName)
