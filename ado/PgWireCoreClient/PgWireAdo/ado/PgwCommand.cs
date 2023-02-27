@@ -43,6 +43,8 @@ public class PgwCommand : DbCommand
     public override UpdateRowSource UpdatedRowSource { get; set; }
     protected override DbConnection? DbConnection { get; set; }
     protected override DbParameterCollection DbParameterCollection { get; }
+    protected DbParameterCollection Parameters => DbParameterCollection;
+
     protected override DbTransaction? DbTransaction { get; set; }
     public override bool DesignTimeVisible { get; set; }
 
@@ -55,14 +57,17 @@ public class PgwCommand : DbCommand
     public override int ExecuteNonQuery()
     {
         var stream = ((PgwConnection)DbConnection).Stream;
-        CallQuery();
-        var result = 0;
-        var commandComplete = new CommandComplete();
+         CallQuery();
+         var result = 0;
+       var commandComplete = new CommandComplete();
         while (commandComplete.IsMatching(stream))
         {
             commandComplete.Read(stream);
             result += commandComplete.Count;
         }
+
+        var syncMessage = new SyncMessage();
+        syncMessage.Write(stream);
         var readyForQuery = new ReadyForQuery();
         if (readyForQuery.IsMatching(stream))
         {
@@ -118,6 +123,7 @@ public class PgwCommand : DbCommand
                 result = PgwConverter.convert(field, dataRow.Data[0]);
             }
         }
+
         var commandComplete = new CommandComplete();
         while (commandComplete.IsMatching(stream))
         {
@@ -129,8 +135,15 @@ public class PgwCommand : DbCommand
                 tmp +=commandComplete.Count;
                 result = tmp;
             }
+            else
+            {
+                break;
+            }
             //
         }
+
+        var sync = new SyncMessage();
+        sync.Write(stream);
         var readyForQuery = new ReadyForQuery();
         if (readyForQuery.IsMatching(stream))
         {
@@ -156,7 +169,7 @@ public class PgwCommand : DbCommand
             }
         }
         else*/
-        {
+        
             var query = CommandText;
             if (CommandType == CommandType.TableDirect)
             {
@@ -166,10 +179,22 @@ public class PgwCommand : DbCommand
             var queryMessage =
                 new ParseMessage(_statementId, query, this.Parameters);
             queryMessage.Write(stream);
-            //TODO READ ParseCompleted
+            var parseComplete = new ParseComplete();
+            if (parseComplete.IsMatching(stream))
+            {
+                parseComplete.Read(stream);
+            }
             _portalId = Guid.NewGuid().ToString();
-            //TODO WRITE Bind with _portalId && _statementID
-            //TODO READ BindCompleted
+            var bindMessage = new BindMessage(_statementId, _portalId, DbParameterCollection);
+            bindMessage.Write(stream);
+            var bindComplete = new BindComplete();
+            if (bindComplete.IsMatching(stream))
+            {
+                bindComplete.Read(stream);
+            }
+
+            var executeMessage = new ExecuteMessage(_portalId,0);
+            executeMessage.Write(stream);
             //TODO WRITE Describe P _portalId
             //TODO READ RowDescription
             //TODO WRITE Execute _portalId [NUMBER OF ROWS]
@@ -179,8 +204,7 @@ public class PgwCommand : DbCommand
             //TODO WRITE Sync
             //TODO READ Ready for query
 
-            throw new NotImplementedException();
-        }
+    
 
         var rowDescription = new RowDescription();
         var errorMessage = new ErrorResponse();

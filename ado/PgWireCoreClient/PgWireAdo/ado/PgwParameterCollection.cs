@@ -9,13 +9,19 @@ public class PgwParameterCollection: DbParameterCollection
     private readonly List<DbParameter?> _data = new();
     public override int Add(object value)
     {
-        _data.Add(new PgwParameter(value));
+        _data.Add((DbParameter)value);
         return _data.Count;
     }
 
     public override void Clear()
     {
         _data.Clear();
+    }
+
+    new DbParameter this[String i]
+    {
+        get { return GetParameter(i); }
+        set { SetParameter(i,value); }
     }
 
     public override bool Contains(object value)
@@ -108,7 +114,7 @@ public class PgwParameterCollection: DbParameterCollection
 
     protected override DbParameter GetParameter(string parameterName)
     {
-        return _data.Find(a => parameterName.Equals(a.ParameterName));
+        return _data.Find(a => parameterName ==a.ParameterName || parameterName == a.ParameterName.Substring(1));
     }
 
     public override void AddRange(Array values)

@@ -12,8 +12,20 @@ namespace PgWireAdo.wire.client
     {
         public override bool IsMatching(ReadSeekableStream stream)
         {
-            return ReadData(stream, () =>
-                stream.ReadByte() == (byte)BackendMessageCode.CommandComplete);
+            try
+            {
+                var to = stream.ReadTimeout;
+                stream.ReadTimeout = 100;
+                var result = ReadData(stream, () =>
+                    stream.ReadByte() == (byte)BackendMessageCode.CommandComplete);
+
+                stream.ReadTimeout = to;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
 
         public override void Read(ReadSeekableStream stream)

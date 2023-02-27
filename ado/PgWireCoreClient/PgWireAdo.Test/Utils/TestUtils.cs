@@ -45,6 +45,7 @@ public class IssueLink : Attribute
 public class NpgsqlParameter:PgwParameter{
         public NpgsqlParameter(string parameterName, Object? dbType)
         {
+            if (parameterName.StartsWith(":")) parameterName.Substring(1);
             this.ParameterName = parameterName;
             if (dbType != null)
             {

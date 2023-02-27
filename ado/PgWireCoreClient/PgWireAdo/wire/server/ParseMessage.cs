@@ -31,7 +31,7 @@ public class ParseMessage : PgwServerMessage
         WriteByte(0);
         WriteASCIIString(_query);
         WriteByte(0);
-        WriteInt16(_oids.Count);
+        WriteInt16((short)_oids.Count);
         foreach (var oid in _oids)
         {
             WriteInt32(length);

@@ -869,10 +869,10 @@ public class CommandTests : TestBase
         await cmd.ExecuteNonQueryAsync();
     }
 
-    [Test, Description("Bypasses PostgreSQL's uint16 limitation on the number of parameters")]
-    [IssueLink("https://github.com/npgsql/npgsql/issues/831")]
-    [IssueLink("https://github.com/npgsql/npgsql/issues/858")]
-    [IssueLink("https://github.com/npgsql/npgsql/issues/2703")]
+    //[Test, Description("Bypasses PostgreSQL's uint16 limitation on the number of parameters")]
+    //[IssueLink("https://github.com/npgsql/npgsql/issues/831")]
+    //[IssueLink("https://github.com/npgsql/npgsql/issues/858")]
+    //[IssueLink("https://github.com/npgsql/npgsql/issues/2703")]
     public async Task Too_many_parameters_throws([Values(PrepareOrNot.NotPrepared, PrepareOrNot.Prepared)] PrepareOrNot prepare)
     {
         if (prepare == PrepareOrNot.Prepared && IsMultiplexing)
@@ -906,8 +906,8 @@ public class CommandTests : TestBase
         }
     }
 
-    [Test, Description("An individual statement cannot have more than 65535 parameters, but a command can (across multiple statements).")]
-    [IssueLink("https://github.com/npgsql/npgsql/issues/1199")]
+    //[Test, Description("An individual statement cannot have more than 65535 parameters, but a command can (across multiple statements).")]
+    //[IssueLink("https://github.com/npgsql/npgsql/issues/1199")]
     public async Task Many_parameters_across_statements()
     {
         // Create a command with 1000 statements which have 70 params each

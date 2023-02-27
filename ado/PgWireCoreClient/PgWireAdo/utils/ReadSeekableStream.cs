@@ -19,6 +19,9 @@ namespace PgWireAdo.utils
         private int _seekBackBufferIndex;
         private readonly Stream _underlyingStream;
 
+        public override int ReadTimeout { get=> _underlyingStream.ReadTimeout; set => _underlyingStream.ReadTimeout = value;
+        }
+
         public ReadSeekableStream(Stream underlyingStream, int seekBackBufferSize)
         {
             if (!underlyingStream.CanRead)
