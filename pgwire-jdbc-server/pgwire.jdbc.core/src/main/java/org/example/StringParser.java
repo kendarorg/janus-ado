@@ -32,7 +32,7 @@ public class StringParser {
         select.put("grant",SqlStringType.UPDATE);
         select.put("set",SqlStringType.UPDATE);
         select.put("truncate",SqlStringType.UPDATE);
-        select.put(":janus:",SqlStringType.UPDATE);
+        select.put("janus:",SqlStringType.UPDATE);
         select.put("declare",SqlStringType.UPDATE);
 
         select.put("call",SqlStringType.CALL);

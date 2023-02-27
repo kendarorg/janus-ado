@@ -23,6 +23,13 @@ public class RealResultBuilder {
 
     public static Future<Integer> executeQuery(Connection conn, String query,
                                                SqlStringType type, Context client,Future<Integer> prev) throws SQLException {
+        if(query==null||query.isEmpty()){
+            var error = new ErrorResponse("empty query");
+            prev = client.write(error,prev);
+            var rfq = new ReadyForQuery();
+            prev = client.write(rfq,prev);
+            return prev;
+        }
         switch (type) {
             case UNKNOWN:
             case NONE:
@@ -62,15 +69,32 @@ public class RealResultBuilder {
         try {
             var conn = client.getConnection();
             var query = queryMessage.getQuery();
+            if(query==null||query.isEmpty()){
+                var error = new ErrorResponse("empty query");
+                prev = client.write(error,prev);
+                var rfq = new ReadyForQuery();
+                prev = client.write(rfq,prev);
+                return prev;
+            }
             var parsed = StringParser.getTypes(query);
             if (StringParser.isUnknown(parsed)) {
+                if (query.startsWith("JANUS:")) {
+                    return handleSpecialQuery(conn, query, client,prev);
+                }
                 return executeQuery(conn,query,SqlStringType.UNKNOWN,client,prev);
             } else {
                 Future<Integer> rs=null;
                 for (var single : parsed) {
-                    var tmp = executeQuery(conn, single.getValue(), single.getType(),client,prev);
-                    if(tmp!=null){
-                        rs=tmp;
+                    if (query.startsWith("JANUS:")) {
+                        var tmp = handleSpecialQuery(conn, query, client,prev);
+                        if (tmp != null) {
+                            rs = tmp;
+                        }
+                    }else {
+                        var tmp = executeQuery(conn, single.getValue(), single.getType(), client, prev);
+                        if (tmp != null) {
+                            rs = tmp;
+                        }
                     }
                 }
                 return rs;
@@ -92,7 +116,13 @@ public class RealResultBuilder {
             var conn = client.getConnection();
             var query = parseMessage.getQuery();
 
-
+            if(query==null||query.isEmpty()){
+                var error = new ErrorResponse("empty query");
+                prev = client.write(error,prev);
+                var rfq = new ReadyForQuery();
+                prev = client.write(rfq,prev);
+                return prev;
+            }
             var parsed = StringParser.getTypes(query);
             if (StringParser.isUnknown(parsed) || StringParser.isMixed(parsed) || parsed.size()==1) {
                 var rs = buildTheResultForSingleQuery(client, prev, psName, portal, maxRecords, conn, query);
@@ -144,8 +174,8 @@ public class RealResultBuilder {
 
     private static Future<Integer> buildTheResultForSingleQuery(Context client, Future<Integer> prev, String psName, String portal, int maxRecords, Connection conn, String query) {
         try {
-            if (query.startsWith(":JANUS:")) {
-                return handleSpecialQuery(conn, query, client);
+            if (query.startsWith("JANUS:")) {
+                return handleSpecialQuery(conn, query, client,prev);
             }
 
             var result = false;
@@ -248,9 +278,15 @@ public class RealResultBuilder {
         }*/
     }
 
-    private static Future<Integer> handleSpecialQuery(Connection conn, String query, Context client) throws SQLException {
+    private static Future<Integer> handleSpecialQuery(Connection conn, String query, Context client,Future<Integer> prev) throws SQLException {
         if (query.equalsIgnoreCase("JANUS:BEGIN_TRANSACTION")) {
             if (conn.getAutoCommit()) conn.setAutoCommit(false);
+            CommandComplete commandComplete = new CommandComplete("RESULT 0");
+            prev = client.write(commandComplete,prev);
+            var rfq = new ReadyForQuery();
+            return client.write(rfq,prev);
+
+
         } else if (query.equalsIgnoreCase("JANUS:ROLLBACK_TRANSACTION")) {
             conn.rollback();
         } else if (query.equalsIgnoreCase("JANUS:COMMIT_TRANSACTION")) {
