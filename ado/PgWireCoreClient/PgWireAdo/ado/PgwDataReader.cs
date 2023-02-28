@@ -195,8 +195,14 @@ public class PgwDataReader :DbDataReader
                     return false;
                 }
             }
-
             var stream = ((PgwConnection)DbConnection).Stream;
+
+            if (_currentRow == null)
+            {
+                var sync0 = new SyncMessage();
+                sync0.Write(stream);
+            }
+
 
             var dataRow = new PgwDataRow(_fields);
             if (dataRow.IsMatching(stream))

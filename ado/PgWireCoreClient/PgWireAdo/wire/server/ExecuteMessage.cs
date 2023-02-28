@@ -20,7 +20,7 @@ namespace PgWireAdo.wire.server
         }
         public override void Write(ReadSeekableStream stream)
         {
-            System.Diagnostics.Trace.WriteLine("QueryMessage "+_portal);
+            System.Diagnostics.Trace.WriteLine("ExecuteMessage " + _portal);
             if (_portal == null) throw new InvalidOperationException("Missing query");
             int length = 1 + 4 + _portal.Length+1+4;
             WriteByte((byte)'E');

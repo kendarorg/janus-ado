@@ -12,8 +12,18 @@ using PgWireAdo.wire.server;
 
 namespace PgWireAdo.ado;
 
-public class PgwCommand : DbCommand
+public class PgwCommand : DbCommand,IDisposable
 {
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            DbTransaction?.Dispose();
+        }
+
+        //base.Dispose(disposing);
+    }
+
     private List<RowDescriptor> _fields;
     private string _statementId;
     private string _portalId;
@@ -115,6 +125,8 @@ public class PgwCommand : DbCommand
         
         var stream = ((PgwConnection)DbConnection).Stream;
         CallQuery();
+        var sync0 = new SyncMessage();
+        sync0.Write(stream);
         object result = null;
         var dataRow = new PgwDataRow(_fields);
         var hasData = false;

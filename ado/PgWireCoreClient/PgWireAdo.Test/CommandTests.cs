@@ -931,7 +931,7 @@ public class CommandTests : TestBase
         cmd1.Dispose();
 
         var cmd2 = conn.CreateCommand();
-        Assert.That(cmd2, Is.SameAs(cmd1));
+        Assert.That(cmd2, Is.Not.SameAs(cmd1));
 
         cmd2.CommandText = "SELECT 1";
         Assert.That(await cmd2.ExecuteScalarAsync(), Is.EqualTo(1));

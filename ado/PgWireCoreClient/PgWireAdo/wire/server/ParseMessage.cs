@@ -22,7 +22,7 @@ public class ParseMessage : PgwServerMessage
 
     public override void Write(ReadSeekableStream stream)
     {
-        System.Diagnostics.Trace.WriteLine("QueryMessage " + _query);
+        System.Diagnostics.Trace.WriteLine("ParseMessage " + _query);
         if (_query == null) throw new InvalidOperationException("Missing query");
         int length = 1 + 4 + _query.Length + 1 + _preparedStatementName.Length + 1+ _oids.Count*4;
         WriteByte((byte)'P');
