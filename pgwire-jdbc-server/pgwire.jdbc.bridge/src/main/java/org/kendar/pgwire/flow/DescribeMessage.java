@@ -56,7 +56,7 @@ public class DescribeMessage  implements PgwFlowMessage{
         try {
             if (type == 'P') {
                 if(context.get("result_" + portal)==null){
-                    context.getBuffer().write(new ReadyForQuery());
+                    context.getBuffer().write(new ReadyForQuery(context.inTransaction()));
                 }else {
                     var resultSet = (ResultSet) context.get("result_" + portal);
                     ArrayList<Field> fields = BaseExecutor.writeRowDescriptor(context, resultSet);

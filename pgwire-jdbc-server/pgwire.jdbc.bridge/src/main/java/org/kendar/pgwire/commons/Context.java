@@ -6,6 +6,9 @@ import java.sql.SQLException;
 public interface Context {
     PgwByteBuffer getBuffer();
 
+    boolean inTransaction();
+    void setTransaction(boolean val);
+
     void put(String key, Object object);
 
     Object get(String key);

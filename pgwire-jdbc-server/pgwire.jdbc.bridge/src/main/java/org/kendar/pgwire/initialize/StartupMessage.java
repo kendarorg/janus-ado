@@ -31,6 +31,6 @@ public class StartupMessage implements PgwClientMessage{
         buffer.write(new AuthenticationOk());
         buffer.write(new BackendKeyData(pid, 5678));
         buffer.write(new ParameterStatus("server_version","15"));
-        buffer.write(new ReadyForQuery());
+        buffer.write(new ReadyForQuery(false));
     }
 }

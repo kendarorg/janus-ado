@@ -7,8 +7,12 @@ import java.io.IOException;
 public class ReadyForQuery implements PgwServerMessage{
     private final char transactionStatus;
 
-    public ReadyForQuery(){
-        transactionStatus = 'I';
+    //public ReadyForQuery(){
+    //    transactionStatus = 'I';
+    //}
+
+    public ReadyForQuery(boolean inTransaction){
+        transactionStatus = inTransaction?'T':'I';
     }
     @Override
     public void write(PgwByteBuffer buffer) throws IOException {

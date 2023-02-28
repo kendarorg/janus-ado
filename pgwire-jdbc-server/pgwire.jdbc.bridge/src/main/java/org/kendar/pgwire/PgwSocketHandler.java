@@ -37,6 +37,17 @@ public class PgwSocketHandler implements Runnable, Context {
         return buffer;
     }
 
+    private boolean transaction = false;
+    @Override
+    public boolean inTransaction() {
+        return transaction;
+    }
+
+    @Override
+    public void setTransaction(boolean val) {
+        this.transaction = val;
+    }
+
     private final Map<String,Object> cache = new ConcurrentHashMap<>();
     @Override
     public void put(String key, Object object) {
@@ -157,9 +168,10 @@ public class PgwSocketHandler implements Runnable, Context {
                 message.handle(this);
                 }catch (Exception ex){
                     try {
+                        setTransaction(false);
                         System.out.println("[ERROR] On message "+lastFoundedType+" "+ex.getMessage());
                         this.getBuffer().write(new ErrorResponse(ex.getMessage()));
-                        this.getBuffer().write(new ReadyForQuery());
+                        this.getBuffer().write(new ReadyForQuery(inTransaction()));
                     } catch (IOException e) {
 
                     }

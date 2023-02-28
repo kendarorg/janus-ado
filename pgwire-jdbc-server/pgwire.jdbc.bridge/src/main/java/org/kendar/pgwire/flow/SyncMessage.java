@@ -14,6 +14,6 @@ public class SyncMessage implements PgwFlowMessage{
 
     @Override
     public void handle(Context context) throws IOException {
-        context.getBuffer().write(new ReadyForQuery());
+        context.getBuffer().write(new ReadyForQuery(context.inTransaction()));
     }
 }

@@ -8,6 +8,7 @@ import org.kendar.pgwire.server.CommandComplete;
 import org.kendar.pgwire.server.EmptyQueryResponse;
 import org.kendar.pgwire.server.ReadyForQuery;
 import org.kendar.pgwire.utils.Field;
+import org.kendar.pgwire.utils.SqlParseResult;
 import org.kendar.pgwire.utils.StringParser;
 
 import java.io.IOException;
@@ -29,49 +30,66 @@ public class SimpleExecutor extends BaseExecutor{
                 handleExecuteRequest(context, query);
             }catch(Exception ex){
                 context.getBuffer().write(new CommandComplete("RESULT 0 "));
-                context.getBuffer().write(new ReadyForQuery());
+                context.getBuffer().write(new ReadyForQuery(context.inTransaction()));
             }
         }else{
             handleExecuteRequest(context, query);
-            context.getBuffer().write(new ReadyForQuery());
+            context.getBuffer().write(new ReadyForQuery(context.inTransaction()));
         }
     }
 
     private void handleExecuteRequest(Context context, String query) throws SQLException, IOException {
         var parsed = StringParser.getTypes(query);
         if (!shouldHandleAsSingleQuery(parsed)) {
-            for (var singleQuery : parsed) {
+            var conn = context.getConnection();
 
+            if(!context.inTransaction()) {
+                conn.setAutoCommit(false);
+                context.setTransaction(true);
+            }
+            for (var singleQuery : parsed) {
+                executeSingleQuery(context,singleQuery);
+            }
+
+            if(!context.inTransaction()) {
+                context.setTransaction(false);
+                conn.commit();
+                conn.setAutoCommit(true);
             }
         } else {
-            boolean result;
             var singleParsed = parsed.get(0);
-            var singleQuery = singleParsed.getValue();
-            var type = singleParsed.getType();
-            var conn = context.getConnection();
-            Statement st;
 
-            st = conn.createStatement();
-            result = st.execute(singleQuery);
+            executeSingleQuery(context, singleParsed);
+        }
+    }
 
-            if(result){
-                var resultSet= st.getResultSet();
-                ArrayList<Field> fields = writeRowDescriptor(context, resultSet);
-                var count = sendDataRowsCount(context,resultSet,0,fields);
-                context.getBuffer().write (new CommandComplete("SELECT "+count));
-            }else{
-                var count = st.getUpdateCount();
-                switch(type){
-                    case INSERT:
-                        context.getBuffer().write (new CommandComplete("INSERT 0 "+count));
-                        break;
-                    case UPDATE:
-                        context.getBuffer().write (new CommandComplete("UPDATE "+count));
-                        break;
-                    default:
-                        context.getBuffer().write (new CommandComplete("SELECT "+count));
-                        break;
-                }
+    private void executeSingleQuery(Context context, SqlParseResult singleParsed) throws SQLException, IOException {
+        boolean result;
+        var singleQuery = singleParsed.getValue();
+        var type = singleParsed.getType();
+        var conn = context.getConnection();
+        Statement st;
+
+        st = conn.createStatement();
+        result = st.execute(singleQuery);
+
+        if(result){
+            var resultSet= st.getResultSet();
+            ArrayList<Field> fields = writeRowDescriptor(context, resultSet);
+            var count = sendDataRowsCount(context,resultSet,0,fields);
+            context.getBuffer().write (new CommandComplete("SELECT "+count));
+        }else{
+            var count = st.getUpdateCount();
+            switch(type){
+                case INSERT:
+                    context.getBuffer().write (new CommandComplete("INSERT 0 "+count));
+                    break;
+                case UPDATE:
+                    context.getBuffer().write (new CommandComplete("UPDATE "+count));
+                    break;
+                default:
+                    context.getBuffer().write (new CommandComplete("SELECT "+count));
+                    break;
             }
         }
     }

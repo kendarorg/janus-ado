@@ -88,43 +88,59 @@ public class ExtendedFlowExecutor extends BaseExecutor {
                                       ParseMessage statement,String portal) throws SQLException, IOException {
         var parsed = StringParser.getTypes(statement.getQuery());
         if (!shouldHandleAsSingleQuery(parsed)) {
+            var conn = context.getConnection();
+            if(!context.inTransaction()) {
+                conn.setAutoCommit(false);
+                context.setTransaction(true);
+            }
             for (var singleQuery : parsed) {
-
+                handleSingleQuery(context, bind, portal, singleQuery);
+            }
+            if(!context.inTransaction()) {
+                context.setTransaction(false);
+                conn.commit();
+                conn.setAutoCommit(true);
             }
         } else {
-            boolean result;
             var singleParsed = parsed.get(0);
-            var singleQuery = singleParsed.getValue();
-            var type = singleParsed.getType();
-            var conn = context.getConnection();
-            Statement st;
-            context.put("connection_"  + portal, conn);
-            if (hasBind(bind)) {
-                var ps = conn.prepareStatement(singleQuery);
-                loadBindParameters(bind, ps);
-                result = ps.execute();
-                st =ps;
-            }else{
-                st = conn.createStatement();
-                result = st.execute(singleQuery);
-            }
-            if(result){
-                var resultSet= st.getResultSet();
 
-                context.put("result_"  + portal, st.getResultSet());
-            }else{
-                var count = st.getUpdateCount();
-                switch(type){
-                    case INSERT:
-                        context.put("result_"  + portal, ("INSERT 0 "+count));
-                        break;
-                    case UPDATE:
-                        context.put("result_"  + portal, ("UPDATE "+count));
-                        break;
-                    default:
-                        context.put("result_"  + portal, ("SELECT 0 "+count));
-                        break;
-                }
+
+            handleSingleQuery(context, bind, portal, singleParsed);
+        }
+    }
+
+    private void handleSingleQuery(Context context, BindMessage bind, String portal, SqlParseResult singleParsed) throws SQLException {
+        boolean result;
+        var singleQuery = singleParsed.getValue();
+        var type = singleParsed.getType();
+        var conn = context.getConnection();
+        Statement st;
+        context.put("connection_"  + portal, conn);
+        if (hasBind(bind)) {
+            var ps = conn.prepareStatement(singleQuery);
+            loadBindParameters(bind, ps);
+            result = ps.execute();
+            st =ps;
+        }else{
+            st = conn.createStatement();
+            result = st.execute(singleQuery);
+        }
+        if(result){
+            var resultSet= st.getResultSet();
+
+            context.put("result_"  + portal, st.getResultSet());
+        }else{
+            var count = st.getUpdateCount();
+            switch(type){
+                case INSERT:
+                    context.put("result_"  + portal, ("INSERT 0 "+count));
+                    break;
+                case UPDATE:
+                    context.put("result_"  + portal, ("UPDATE "+count));
+                    break;
+                default:
+                    context.put("result_"  + portal, ("SELECT 0 "+count));
+                    break;
             }
         }
     }
