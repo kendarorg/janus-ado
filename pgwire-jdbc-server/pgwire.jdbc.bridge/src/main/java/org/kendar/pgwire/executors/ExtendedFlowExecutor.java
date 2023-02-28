@@ -1,4 +1,4 @@
-package org.kendar.pgwire.utils;
+package org.kendar.pgwire.executors;
 
 import org.kendar.pgwire.commons.Context;
 import org.kendar.pgwire.flow.BindMessage;
@@ -6,7 +6,9 @@ import org.kendar.pgwire.flow.ParseMessage;
 import org.kendar.pgwire.flow.SyncMessage;
 import org.kendar.pgwire.server.CommandComplete;
 import org.kendar.pgwire.server.EmptyQueryResponse;
-import org.kendar.pgwire.server.ReadyForQuery;
+import org.kendar.pgwire.utils.PgwConverter;
+import org.kendar.pgwire.utils.SqlParseResult;
+import org.kendar.pgwire.utils.StringParser;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
@@ -17,15 +19,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-public class SqlExecutor {
+public class ExtendedFlowExecutor extends BaseExecutor {
 
-    private static Set<String> fakeQueries;
-
-    static {
-        fakeQueries = new ConcurrentSkipListSet<>();
-        fakeQueries.add("SET extra_float_digits".toLowerCase(Locale.ROOT));
-        fakeQueries.add("SET application_name".toLowerCase(Locale.ROOT));
-    }
 
 
     public void handle(Context context,String portal){
@@ -82,9 +77,7 @@ public class SqlExecutor {
         }
     }
 
-    private boolean shouldHandleAsSingleQuery(List<SqlParseResult> parsed) {
-        return StringParser.isUnknown(parsed) || StringParser.isMixed(parsed) || parsed.size() == 1;
-    }
+
 
     private boolean hasBind(BindMessage bind) {
         return bind != null && bind.getParameterValues().size() > 0;

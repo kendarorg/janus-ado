@@ -6,6 +6,8 @@ import org.kendar.pgwire.commons.PgwByteBuffer;
 import org.kendar.pgwire.flow.*;
 import org.kendar.pgwire.initialize.SSLNegotation;
 import org.kendar.pgwire.initialize.StartupMessage;
+import org.kendar.pgwire.server.ErrorResponse;
+import org.kendar.pgwire.server.ReadyForQuery;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -117,8 +119,8 @@ public class PgwSocketHandler implements Runnable, Context {
 
     public void respondToClient() {
         char lastFoundedType = '0';
-        try {
             while (running.get()) {
+                try {
                 var item = inputQueue.poll();
                 if (item == null) {
                     sleep(100);
@@ -146,15 +148,25 @@ public class PgwSocketHandler implements Runnable, Context {
                     case 'X':
                         message = new TerminateMessage();
                         break;
+                    case 'Q':
+                        message = new QueryMessage();
+                        break;
                 }
                 System.out.println("[SERVER] Recv: "+message.getClass().getSimpleName());
                 message.read(item);
                 message.handle(this);
+                }catch (Exception ex){
+                    try {
+                        System.out.println("[ERROR] On message "+lastFoundedType+" "+ex.getMessage());
+                        this.getBuffer().write(new ErrorResponse(ex.getMessage()));
+                        this.getBuffer().write(new ReadyForQuery());
+                    } catch (IOException e) {
+
+                    }
+                    ex.printStackTrace();
+                }
             }
-        }catch (Exception ex){
-            System.out.println("[ERROR] On message "+lastFoundedType+" "+ex.getMessage());
-            ex.printStackTrace();
-        }
+
     }
 
 

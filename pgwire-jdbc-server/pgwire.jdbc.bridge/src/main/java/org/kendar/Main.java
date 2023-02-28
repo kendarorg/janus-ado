@@ -7,9 +7,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ClassNotFoundException {
         var postgresPort = 5432;
         var maxTimeout = 120000;
+        //Class.forName("org.h2.Driver");
         PgwJdbcBridge.start(()->{
             try {
                 var conn = DriverManager.
