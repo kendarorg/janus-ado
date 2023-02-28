@@ -31,6 +31,7 @@ public class StartupMessage implements PGClientMessage {
     @Override
     public PGClientMessage decode(ByteBuffer buffer) {
         var prev= buffer.position();
+
         var length = buffer.getInt(prev+0);
         var protocolVersion = buffer.getInt(prev+4);
         buffer.position(prev+8);

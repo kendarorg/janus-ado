@@ -3,6 +3,7 @@ package org.example.builders;
 import org.example.SqlStringType;
 import org.example.StringParser;
 import org.example.messages.QueryMessage;
+import org.example.messages.SyncMessage;
 import org.example.messages.commons.ErrorResponse;
 import org.example.messages.commons.ReadyForQuery;
 import org.example.messages.extendedquery.BindMessage;
@@ -21,10 +22,12 @@ import java.util.concurrent.Future;
 
 public class RealResultBuilder {
 
-    public static Future<Integer> executeQuery(Connection conn, String query,
+    public static Future<Integer> executeQuery(ByteBuffer buffer,Connection conn, String query,
                                                SqlStringType type, Context client,Future<Integer> prev) throws SQLException {
         if(query==null||query.isEmpty()){
             var error = new ErrorResponse("empty query");
+
+            client.setInterceptSync(true);
             prev = client.write(error,prev);
             var rfq = new ReadyForQuery();
             prev = client.write(rfq,prev);
@@ -41,7 +44,7 @@ public class RealResultBuilder {
                     CommandComplete commandComplete = new CommandComplete("RESULT " + updateCount);
                     return client.write(commandComplete,prev);
                 } else {
-                    return loadResultset(client, st,prev, "", "",0);
+                    return loadResultset(buffer,client, st,prev, "", "",0);
                 }
             }
             case UPDATE:{
@@ -58,19 +61,20 @@ public class RealResultBuilder {
                     CommandComplete commandComplete = new CommandComplete("RESULT " + updateCount);
                     return client.write(commandComplete,prev);
                 } else {
-                    return loadResultset(client, st,prev, "", "",0);
+                    return loadResultset(buffer,client, st,prev, "", "",0);
                 }
             }
         }
         return null;
     }
 
-    public static Future<Integer> buildRealResultQuery(QueryMessage queryMessage, Context client,Future<Integer> prev) {
+    public static Future<Integer> buildRealResultQuery(ByteBuffer buffer,QueryMessage queryMessage, Context client,Future<Integer> prev) {
         try {
             var conn = client.getConnection();
             var query = queryMessage.getQuery();
             if(query==null||query.isEmpty()){
                 var error = new ErrorResponse("empty query");
+                client.setInterceptSync(true);
                 prev = client.write(error,prev);
                 var rfq = new ReadyForQuery();
                 prev = client.write(rfq,prev);
@@ -81,7 +85,7 @@ public class RealResultBuilder {
                 if (query.startsWith("JANUS:")) {
                     return handleSpecialQuery(conn, query, client,prev);
                 }
-                return executeQuery(conn,query,SqlStringType.UNKNOWN,client,prev);
+                return executeQuery(buffer,conn,query,SqlStringType.UNKNOWN,client,prev);
             } else {
                 Future<Integer> rs=null;
                 for (var single : parsed) {
@@ -91,7 +95,7 @@ public class RealResultBuilder {
                             rs = tmp;
                         }
                     }else {
-                        var tmp = executeQuery(conn, single.getValue(), single.getType(), client, prev);
+                        var tmp = executeQuery(buffer,conn, single.getValue(), single.getType(), client, prev);
                         if (tmp != null) {
                             rs = tmp;
                         }
@@ -104,7 +108,7 @@ public class RealResultBuilder {
         }
     }
 
-    public static Future<Integer> buildRealResultPs(ParseMessage parseMessage, Context client,
+    public static Future<Integer> buildRealResultPs(ByteBuffer buffer,ParseMessage parseMessage, Context client,
                                                     Future<Integer> prev,
                                                     String psName,String portal, int maxRecords) throws SQLException {
 
@@ -118,6 +122,7 @@ public class RealResultBuilder {
 
             if(query==null||query.isEmpty()){
                 var error = new ErrorResponse("empty query");
+                client.setInterceptSync(true);
                 prev = client.write(error,prev);
                 var rfq = new ReadyForQuery();
                 prev = client.write(rfq,prev);
@@ -125,15 +130,17 @@ public class RealResultBuilder {
             }
             var parsed = StringParser.getTypes(query);
             if (StringParser.isUnknown(parsed) || StringParser.isMixed(parsed) || parsed.size()==1) {
-                var rs = buildTheResultForSingleQuery(client, prev, psName, portal, maxRecords, conn, query);
+                var rs = buildTheResultForSingleQuery(buffer,client, prev, psName, portal, maxRecords, conn, query);
 //                var rfq = new ReadyForQuery();
 //                rs = client.write(rfq,rs);
+
+                client.setInterceptSync(true);
                 return rs;
             } else {
                 Future<Integer> rs=null;
                 for (var single : parsed) {
                     var tmp = //executeQuery(conn, single.getValue(), single.getType(),client,prev);
-                            buildTheResultForSingleQuery(client, prev, psName, portal, maxRecords, conn, single.getValue());
+                            buildTheResultForSingleQuery(buffer,client, prev, psName, portal, maxRecords, conn, single.getValue());
                     if(tmp!=null){
                         try {
                             tmp.get();
@@ -143,6 +150,8 @@ public class RealResultBuilder {
                         rs=tmp;
                     }
                 }
+
+                client.setInterceptSync(true);
 //                var rfq = new ReadyForQuery();
 //                rs = client.write(rfq,rs);
                 return rs;
@@ -172,7 +181,7 @@ public class RealResultBuilder {
         }
     }
 
-    private static Future<Integer> buildTheResultForSingleQuery(Context client, Future<Integer> prev, String psName, String portal, int maxRecords, Connection conn, String query) {
+    private static Future<Integer> buildTheResultForSingleQuery(ByteBuffer buffer,Context client, Future<Integer> prev, String psName, String portal, int maxRecords, Connection conn, String query) {
         try {
             if (query.startsWith("JANUS:")) {
                 return handleSpecialQuery(conn, query, client,prev);
@@ -213,13 +222,14 @@ public class RealResultBuilder {
                 result = st.execute(query);
             }
             if (result) {
-                return loadResultset(client, st, prev, psName, portal, maxRecords);
+                return loadResultset(buffer,client, st, prev, psName, portal, maxRecords);
             }else{
                 var count = st.getUpdateCount();
                 CommandComplete commandComplete = new CommandComplete("RESULT "+count);
                 return client.write(commandComplete, prev);
             }
         } catch (SQLException e) {
+            client.setInterceptSync(true);
             ErrorResponse errorResponse = new ErrorResponse(e.getMessage());
             prev = client.write(errorResponse, prev);
         }
@@ -228,7 +238,7 @@ public class RealResultBuilder {
     }
 
 
-    private static Future<Integer> loadResultset(Context client, Statement st, Future<Integer> prev,
+    private static Future<Integer> loadResultset(ByteBuffer buffer,Context client, Statement st, Future<Integer> prev,
                                                  String psName, String portal, int maxRecords) throws SQLException {
         Future<Integer> writeResult;
         var rs = st.getResultSet();
@@ -244,11 +254,18 @@ public class RealResultBuilder {
                     , md.getColumnClassName(i + 1), md.getScale(i + 1), md.getColumnType(i + 1)));
         }
 
+        var sync = new SyncMessage();
+        if(!sync.isMatching(buffer)){
+            CommandComplete commandComplete = new CommandComplete("SELECT " + 0);
+            return client.write(commandComplete,prev);
+        }
+
         RowDescription rowDescription = new RowDescription(fields);
         writeResult = client.write(rowDescription,prev);
         if(maxRecords==0){
             maxRecords=Integer.MAX_VALUE;
         }
+
         int count = 0;
         while (rs.next() && count<maxRecords) {
             count++;

@@ -10,6 +10,8 @@ import java.util.concurrent.Future;
 
 public class ExecuteMessage implements PGClientMessage {
 
+    private ByteBuffer buffer;
+
     public String getPortal() {
         return portal;
     }
@@ -26,7 +28,8 @@ public class ExecuteMessage implements PGClientMessage {
     private int maxRecords;
     private String psName;
 
-    public ExecuteMessage(String portal, int maxRecords) {
+    public ExecuteMessage(String portal, int maxRecords,ByteBuffer buffer) {
+        this.buffer = buffer;
         if(portal==null)portal="";
         this.portal = portal;
         this.maxRecords = maxRecords;
@@ -42,13 +45,14 @@ public class ExecuteMessage implements PGClientMessage {
 
     @Override
     public PGClientMessage decode(ByteBuffer buffer) {
+        this.buffer = buffer;
         var prev = buffer.position();
         buffer.position(prev+1);
         var length = buffer.getInt();
         //buffer.position(5);
         var portal = PGClientMessage.extractString(buffer);
         var maxRecords = buffer.getInt();
-        return new ExecuteMessage(portal, maxRecords);
+        return new ExecuteMessage(portal, maxRecords,buffer);
     }
 
     @Override
@@ -61,12 +65,12 @@ public class ExecuteMessage implements PGClientMessage {
     @Override
     public void handle(Context client, Future<Integer> prev) {
 
-
+            client.setInterceptSync(false);
         try {
             Future<Integer> writeResult = null;
             psName = (String)client.get("bind_"+portal);
             var msg = (ParseMessage)client.get("statement_"+psName);
-            writeResult = RealResultBuilder.buildRealResultPs( msg,client,prev,psName, portal,maxRecords);
+            writeResult = RealResultBuilder.buildRealResultPs(buffer, msg,client,prev,psName, portal,maxRecords);
 
             /*var rqq = new ReadyForQuery();
             writeResult = client.write(rqq,writeResult);*/

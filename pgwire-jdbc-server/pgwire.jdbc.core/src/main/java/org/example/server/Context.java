@@ -16,4 +16,7 @@ public interface Context {
     Object get(String id);
     //Object get(Predicate<Object> test);
     Connection getConnection();
+
+    boolean shouldInterceptSync();
+    void setInterceptSync(boolean interceptSync);
 }

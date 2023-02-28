@@ -25,6 +25,12 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
     private int maxTimeout;
     private  Queue<Object> storage=new LinkedBlockingQueue<>();
 
+    public void setInterceptSync(boolean interceptSync) {
+        this.interceptSync = interceptSync;
+    }
+
+    private boolean interceptSync=true;
+
     public LocalCompletionHandler(AsynchronousSocketChannel client,
                                   Supplier<Connection> conn,int maxTimeout) {
 
@@ -59,9 +65,10 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
         messages.add(new ParseMessage());
         messages.add(new BindMessage());
         messages.add(new DescribeMessage());
-        messages.add(new SyncMessage());
+        //
         messages.add(new TerminateMessage());
         messages.add(new ExecuteMessage());
+        messages.add(new SyncMessage());
     }
 
 
@@ -85,6 +92,7 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
                             shouldCloseConnection = true;
                             break;
                         } else {
+
                             var decoded = msg.decode(buffer);
                             lastMessage= (PGClientMessage) decoded;
                             decoded.handle(this,null);
@@ -111,6 +119,7 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
             }
         }catch (Exception ex){
 
+            setInterceptSync(true);
             System.out.println("[SERVER] ERROR 02: " + ex.getMessage());
             var error = new ErrorResponse(ex.getMessage());
             this.write(error,null);
@@ -209,5 +218,10 @@ public class LocalCompletionHandler implements CompletionHandler<Integer,ByteBuf
 
     public Connection getConnection() {
         return conn;
+    }
+
+    @Override
+    public boolean shouldInterceptSync() {
+        return interceptSync;
     }
 }

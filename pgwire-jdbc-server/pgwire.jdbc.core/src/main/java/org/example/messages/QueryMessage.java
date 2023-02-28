@@ -10,14 +10,16 @@ import java.util.concurrent.Future;
 
 public class QueryMessage implements PGClientMessage {
     private String query;
+    private ByteBuffer buffer;
 
     public QueryMessage(){
 
     }
 
-    private QueryMessage(String query){
+    private QueryMessage(String query,ByteBuffer buffer){
 
         this.query = query;
+        this.buffer = buffer;
     }
 
     public void handleQueryMessage(AsynchronousSocketChannel client) {
@@ -30,13 +32,14 @@ public class QueryMessage implements PGClientMessage {
 
     @Override
     public PGClientMessage decode(ByteBuffer buffer) {
+        this.buffer = buffer;
         var prev= buffer.position();
         var length = buffer.getInt(1);
         buffer.position(5);
         var query = PGClientMessage.extractStrings(buffer);
         System.out.println(query.get(0));
         buffer.position(prev+length);
-        return new QueryMessage(query.get(0));
+        return new QueryMessage(query.get(0),buffer);
     }
 
     @Override
@@ -54,7 +57,7 @@ public class QueryMessage implements PGClientMessage {
 
         // Let's assume it's a query message, and just send a simple response
         // First we send a RowDescription. We'll send two columns, with names "id" and "name"
-        writeResult = RealResultBuilder.buildRealResultQuery(this,client,prev);
+        writeResult = RealResultBuilder.buildRealResultQuery(this.buffer,this,client,prev);
 
         // Finally, write ReadyForQuery
         ReadyForQuery readyForQuery = new ReadyForQuery();

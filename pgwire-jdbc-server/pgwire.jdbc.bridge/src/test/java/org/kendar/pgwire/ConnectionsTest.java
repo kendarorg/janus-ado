@@ -1,4 +1,4 @@
-package org.example;
+package org.kendar.pgwire;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -6,53 +6,47 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.sql.*;
-import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class BasicTest {
+public class ConnectionsTest {
+    private static Thread mainThread;
+
     public static final String POSTGRES_FAKE_CONNECTION_STRING = "jdbc:postgresql://localhost/test?" +
             "user=fred&" +
             "password=secret&" +
             "ssl=false";
 
-    private static Connection conn;
-
-    public String getH2Connection(){
-        return "jdbc:h2:mem:test;";
+    @AfterAll
+    static void afterAll(){
+        mainThread.stop();
     }
 
     @BeforeAll
-    static void beforeAll() throws InterruptedException, ClassNotFoundException, SQLException {
-        Class.forName("org.postgresql.Driver");
-        conn = DriverManager.
-                getConnection("jdbc:h2:mem:test;", "sa","sa");
-        var th = new Thread(()-> {
+    static void beforeAll(){
+        var postgresPort = 5432;
+        var maxTimeout = 120000;
+        mainThread = new Thread(()->PgwJdbcBridge.start(()->{
             try {
-                PgWireFakeServer.start(()->{
-                    try {
-                        return DriverManager.
-                                getConnection("jdbc:h2:mem:test;", "sa","sa");
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-            } catch (IOException e) {
-
-            } catch (InterruptedException e) {
-
-            } catch (ExecutionException e) {
-
+                var conn = DriverManager.
+                        getConnection("jdbc:h2:mem:test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH", "sa","sa");
+                Statement stat = conn.createStatement();
+                stat.execute("CREATE ALIAS IF NOT EXISTS pg_sleep FOR 'java.lang.Thread.sleep(long)'");
+                return conn;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-        });
-        th.start();
-        Thread.sleep(1000);
+        },maxTimeout,postgresPort));
+        mainThread.start();
     }
-
-    @AfterAll
-    public static void afterAll() throws IOException {
-        PgWireFakeServer.stop();
+    @Test
+    void startupMessageTest() throws SQLException {
+        String url = POSTGRES_FAKE_CONNECTION_STRING;
+        Connection conn = DriverManager.getConnection(url);
+        PreparedStatement ps = conn.prepareStatement("SELECT ?");
+        ps.setString(1,"TEST");
+        ps.execute();
     }
 
     @Test
@@ -159,7 +153,7 @@ public class BasicTest {
             assertEquals(1, result.getInt(1));
             assertEquals(1.72F, result.getFloat(2));
 
-            conn.createStatement().execute("drop table test4");
+            conn.createStatement().execute("drop table if exists test4");
         }
     }
 
@@ -177,8 +171,6 @@ public class BasicTest {
             var result = ps.executeQuery();
             assertTrue(result.next());
             assertEquals("4", result.getString(1));
-
-            conn.createStatement().execute("drop table test4");
         }
     }
 

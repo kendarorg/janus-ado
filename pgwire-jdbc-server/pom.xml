@@ -45,6 +45,7 @@
     <modules>
         <module>pgwire.jdbc.core</module>
         <module>pwgire-server</module>
+        <module>pgwire.jdbc.bridge</module>
     </modules>
     
     <build>
