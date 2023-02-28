@@ -114,6 +114,10 @@ public class ExtendedFlowExecutor extends BaseExecutor {
         var singleQuery = singleParsed.getValue();
         var type = singleParsed.getType();
         var conn = context.getConnection();
+        if (singleQuery.startsWith("JANUS:")) {
+            handleSpecialQuery(context,conn, singleQuery);
+            return;
+        }
         Statement st;
         context.put("connection_"  + portal, conn);
         if (hasBind(bind)) {

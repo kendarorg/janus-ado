@@ -12,6 +12,7 @@ import org.kendar.pgwire.utils.SqlParseResult;
 import org.kendar.pgwire.utils.StringParser;
 
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -68,6 +69,10 @@ public class SimpleExecutor extends BaseExecutor{
         var singleQuery = singleParsed.getValue();
         var type = singleParsed.getType();
         var conn = context.getConnection();
+        if (singleQuery.startsWith("JANUS:")) {
+            handleSpecialQuery(context,conn, singleQuery);
+            return;
+        }
         Statement st;
 
         st = conn.createStatement();

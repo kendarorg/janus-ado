@@ -4,6 +4,7 @@ import org.kendar.pgwire.commons.Context;
 import org.kendar.pgwire.flow.SyncMessage;
 import org.kendar.pgwire.server.CommandComplete;
 import org.kendar.pgwire.server.DataRow;
+import org.kendar.pgwire.server.ReadyForQuery;
 import org.kendar.pgwire.server.RowDescription;
 import org.kendar.pgwire.utils.Field;
 import org.kendar.pgwire.utils.PgwConverter;
@@ -12,8 +13,10 @@ import org.kendar.pgwire.utils.StringParser;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -75,6 +78,71 @@ public class BaseExecutor {
             context.getBuffer().write(new DataRow(byteRow, fields));
         }
         return count;
+    }
+
+
+
+    protected void handleSpecialQuery(Context context, Connection conn, String query) throws SQLException, IOException {
+        if (query.equalsIgnoreCase("JANUS:BEGIN_TRANSACTION")) {
+            if (conn.getAutoCommit()) conn.setAutoCommit(false);
+            context.setTransaction(true);
+            context.getBuffer().write(new CommandComplete("RESULT 0"));
+            context.getBuffer().write(new ReadyForQuery(true));
+
+        } else if (query.equalsIgnoreCase("JANUS:ROLLBACK_TRANSACTION")) {
+            conn.rollback();
+            context.setTransaction(false);
+            conn.setAutoCommit(true);
+            context.getBuffer().write(new CommandComplete("RESULT 0"));
+            context.getBuffer().write(new ReadyForQuery(false));
+        } else if (query.equalsIgnoreCase("JANUS:COMMIT_TRANSACTION")) {
+            conn.commit();
+            context.setTransaction(false);
+            conn.setAutoCommit(true);
+            context.getBuffer().write(new CommandComplete("RESULT 0"));
+            context.getBuffer().write(new ReadyForQuery(false));
+        } else if (query.startsWith("JANUS:SET_SAVEPOINT:")) {
+            var val = query.split(":");
+            if (val[2].isEmpty()) {
+                var savepoint = conn.setSavepoint();
+                context.put("savepoint_null",savepoint);
+            } else {
+                var savepoint = conn.setSavepoint(val[2]);
+                context.put("savepoint_"+val[2],savepoint);
+            }
+            context.getBuffer().write(new CommandComplete("RESULT 0"));
+            context.getBuffer().write(new ReadyForQuery(false));
+        } else if (query.startsWith("JANUS:RELEASE_SAVEPOINT:")) {
+            var val = query.split(":");
+
+            Savepoint svp = getSavepoint(context, val);
+            if (svp != null) {
+                conn.releaseSavepoint(svp);
+            }
+            context.getBuffer().write(new CommandComplete("RESULT 0"));
+            context.getBuffer().write(new ReadyForQuery(false));
+        } else if (query.startsWith("JANUS:ROLLBACK_SAVEPOINT:")) {
+            var val = query.split(":");
+
+            Savepoint svp = getSavepoint(context, val);
+            if (svp != null) {
+                conn.rollback(svp);
+            }
+            context.getBuffer().write(new CommandComplete("RESULT 0"));
+            context.getBuffer().write(new ReadyForQuery(false));
+        }else {
+            throw new RuntimeException("NOT IMPLEMENTED SPECIAL QUERIES");
+        }
+    }
+
+
+
+    private static Savepoint getSavepoint(Context client, String[] val) {
+        if(val.length>=3){
+            return (Savepoint)client.get("savepoint_"+val[2]);
+        }else{
+            return (Savepoint)client.get("savepoint_null");
+        }
     }
 
 }
