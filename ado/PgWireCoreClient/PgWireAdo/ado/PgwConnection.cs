@@ -37,6 +37,7 @@ public class PgwConnection : DbConnection
     {
         _client = new TcpClient(_options.DataSource, _options.Port);
         _stream = new ReadSeekableStream(_client.GetStream(), 1024);
+        _stream.ReadTimeout = 10;
         _state = ConnectionState.Open;
         var sslNegotiation = new SSLNegotation();
         sslNegotiation.Write(_stream);

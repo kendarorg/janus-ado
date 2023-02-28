@@ -20,7 +20,7 @@ namespace PgWireAdo.wire.server
 
         public override void Write(ReadSeekableStream stream)
         {
-            System.Diagnostics.Trace.WriteLine("SyncMessage");
+            ConsoleOut.WriteLine("SyncMessage");
             WriteByte((byte)'S');
             WriteInt32(4);
             Flush(stream);

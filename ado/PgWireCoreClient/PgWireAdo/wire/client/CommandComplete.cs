@@ -15,7 +15,7 @@ namespace PgWireAdo.wire.client
             try
             {
                 var to = stream.ReadTimeout;
-                stream.ReadTimeout = 100;
+                stream.ReadTimeout = 10;
                 var result = ReadData(stream, () =>
                     stream.ReadByte() == (byte)BackendMessageCode.CommandComplete);
 
@@ -30,7 +30,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(ReadSeekableStream stream)
         {
-            System.Diagnostics.Trace.WriteLine("CommandComplete");
+            ConsoleOut.WriteLine("CommandComplete");
             stream.ReadByte();
             stream.ReadInt32();
             var data = stream.ReadAsciiString();

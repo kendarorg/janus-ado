@@ -12,7 +12,8 @@ namespace Npgsql.Tests;
         [Test]
         public void Test1()
         {
-            var conn = OpenConnection();
+            ConsoleOut.setup((String a) => { TestContext.WriteLine(a); });
+        var conn = OpenConnection();
            var  cmd = conn.CreateCommand();
             cmd.CommandText = "drop table if  exists test";
             cmd.ExecuteNonQuery();

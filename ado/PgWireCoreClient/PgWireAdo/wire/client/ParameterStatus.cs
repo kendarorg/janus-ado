@@ -18,7 +18,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(ReadSeekableStream stream)
         {
-            System.Diagnostics.Trace.WriteLine("ParameterStatus");
+            ConsoleOut.WriteLine("ParameterStatus");
             stream.ReadByte();
             var length = stream.ReadInt32();
             Key = stream.ReadAsciiString();

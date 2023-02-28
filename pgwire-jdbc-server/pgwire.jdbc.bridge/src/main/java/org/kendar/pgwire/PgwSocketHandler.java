@@ -96,6 +96,7 @@ public class PgwSocketHandler implements Runnable, Context {
             while(running.get()){
 
                 var messageType = buffer.readByte();
+                //System.out.println("R "+(char)messageType);
                 var messageLength = buffer.readInt32();
                 var data = buffer.read(messageLength-4);
                 var dm = new DataMessage((char)messageType,messageLength,data);
@@ -103,7 +104,7 @@ public class PgwSocketHandler implements Runnable, Context {
             }
         }
         catch (IOException e) {
-            //e.printStackTrace();
+            e.printStackTrace();
         }
         finally {
             try {
@@ -134,7 +135,7 @@ public class PgwSocketHandler implements Runnable, Context {
                 try {
                 var item = inputQueue.poll();
                 if (item == null) {
-                    sleep(100);
+                    sleep(10);
                     continue;
                 }
                 PgwFlowMessage message = null;
@@ -196,7 +197,7 @@ public class PgwSocketHandler implements Runnable, Context {
             if(after>now){
                 throw new SQLException("Unable to find "+s+" message");
             }
-            if(dm==null)sleep(100);
+            if(dm==null)sleep(10);
         }
         if(dm!=null){
             System.out.println("[SERVER] Recv:* "+dm.getType());

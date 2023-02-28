@@ -15,8 +15,8 @@ public class BindMessage : PgwServerMessage
 
     public BindMessage(string statementId, string commandText, DbParameterCollection parameters)
     {
-        _sourcePsName = commandText;
-        _destinationPortal = statementId;
+        _sourcePsName = statementId;
+        _destinationPortal = commandText;
         foreach (DbParameter dbParameter in parameters)
         {
             if (dbParameter.Direction == ParameterDirection.Input)
@@ -30,7 +30,7 @@ public class BindMessage : PgwServerMessage
 
     public override void Write(ReadSeekableStream stream)
     {
-        System.Diagnostics.Trace.WriteLine("BindMessage " + _sourcePsName+" portal: "+ _destinationPortal);
+        ConsoleOut.WriteLine("BindMessage " + _sourcePsName+" portal: "+ _destinationPortal);
         if (_sourcePsName == null) throw new InvalidOperationException("Missing query");
 
         var parsLengths = 0;
@@ -38,22 +38,22 @@ public class BindMessage : PgwServerMessage
         {
             if (pgwParameter == null || pgwParameter.Value == null)
             {
-                parsLengths += 4;
+                parsLengths += 2+4;
             }
             else if (pgwParameter.Value.GetType() == typeof(string))
             {
-                parsLengths += 4+ ((String)pgwParameter.Value).Length;
+                parsLengths += 2+4+ ((String)pgwParameter.Value).Length;
             }
             else
             {
-                parsLengths += 4 + PgwConverter.toBytes(pgwParameter.Value).Length;
+                parsLengths += 2+4 + PgwConverter.toBytes(pgwParameter.Value).Length;
             }
 
         }
 
         int length = 4 + _sourcePsName.Length + 1 + _destinationPortal.Length + 1 +
-                     2 + _parameters.Count * 2 +
-                     2 + parsLengths +
+                     //2 + _parameters.Count * 2 +
+                     2 + 2+ parsLengths +
                      2 + _results.Count * 2;
         WriteByte((byte)'B');
         WriteInt32(length);

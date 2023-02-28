@@ -1,4 +1,5 @@
 ﻿using PgWireAdo.ado;
+using PgWireAdo.utils;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -79,7 +80,7 @@ namespace PgWireAdo.Test.Utils
                 while (!_process.StandardOutput.EndOfStream)
                 {
                     string line = _process.StandardOutput.ReadLine();
-                    System.Diagnostics.Trace.WriteLine(line);
+                    ConsoleOut.WriteLine(line);
                     TestContext.Progress.WriteLine(line);
                     // do something with line
                 }

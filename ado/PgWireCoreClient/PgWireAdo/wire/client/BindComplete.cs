@@ -18,7 +18,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(ReadSeekableStream stream)
         {
-            System.Diagnostics.Trace.WriteLine("BindComplete");
+            ConsoleOut.WriteLine("BindComplete");
             stream.ReadByte();
             stream.ReadInt32();
         }

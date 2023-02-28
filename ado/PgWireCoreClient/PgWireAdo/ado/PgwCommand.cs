@@ -216,21 +216,13 @@ public class PgwCommand : DbCommand,IDisposable
             bindComplete.Read(stream);
         }
 
-        var executeMessage = new ExecuteMessage(_portalId,0);
+        
+
+        var describeMessage = new DescribeMessage('P', _portalId);
+        describeMessage.Write(stream);
+
+        var executeMessage = new ExecuteMessage(_portalId, 0);
         executeMessage.Write(stream);
-        //TODO WRITE Describe P _portalId
-        //TODO READ RowDescription
-        //TODO WRITE Execute _portalId [NUMBER OF ROWS]
-        //TODO READ [NUMBER OF ROWS] DataRow
-        //TODO WAIT CommandComplete (no more rows) 
-        //TODO      PortalSuspend (other rows
-        //TODO WRITE Sync
-        //TODO READ Ready for query
-        if (errorMessage.IsMatching(stream))
-        {
-            errorMessage.Read(stream);
-        }
-    
 
         var rowDescription = new RowDescription();
         if (rowDescription.IsMatching(stream))
@@ -238,6 +230,7 @@ public class PgwCommand : DbCommand,IDisposable
             rowDescription.Read(stream);
             _fields = rowDescription.Fields;
         }
+        
         if (errorMessage.IsMatching(stream))
         {
             errorMessage.Read(stream);

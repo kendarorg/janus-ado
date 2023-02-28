@@ -12,13 +12,17 @@ namespace PgWireAdo.wire.client
     {
         public override bool IsMatching(ReadSeekableStream stream)
         {
-            return ReadData(stream ,() => 
-                stream.ReadByte() == (byte)BackendMessageCode.NoticeResponse);
+            return ReadData(stream, () =>
+            {
+                var dd = stream.ReadByte();
+                return dd == (byte)BackendMessageCode.NoticeResponse;
+            });
+
         }
 
         public override void Read(ReadSeekableStream stream)
         {
-            System.Diagnostics.Trace.WriteLine("SSLResponse");
+            ConsoleOut.WriteLine("SSLResponse");
             stream.ReadByte();
         }
     }

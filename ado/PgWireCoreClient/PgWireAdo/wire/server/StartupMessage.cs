@@ -23,9 +23,9 @@ namespace PgWireAdo.wire.server
 
         public override void Write(ReadSeekableStream stream)
         {
-            System.Diagnostics.Trace.WriteLine("StartupMessage");
+            ConsoleOut.WriteLine("StartupMessage");
             var data = new List<byte[]>();
-            int length = 4 + 4+1;
+            int length = 4 + 4;
             foreach (var parameter in _parameters)
             {
                 var k = Encoding.ASCII.GetBytes(parameter.Key);
@@ -34,8 +34,8 @@ namespace PgWireAdo.wire.server
                 data.Add(new byte[]{0});
                 data.Add(v);
                 data.Add(new byte[] { 0 });
-                length += k.Length;
-                length += v.Length;
+                length += k.Length+1;
+                length += v.Length+1;
             }
             WriteInt32(length);
             WriteByte(0x00);

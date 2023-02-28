@@ -26,7 +26,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(ReadSeekableStream stream)
         {
-            System.Diagnostics.Trace.WriteLine("RowDescription");
+            ConsoleOut.WriteLine("RowDescription");
             stream.ReadByte();
             var length = stream.ReadInt32();
             var closCount = stream.ReadInt16();

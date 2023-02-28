@@ -29,7 +29,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(ReadSeekableStream stream)
         {
-            System.Diagnostics.Trace.WriteLine("PgwDataRow");
+            ConsoleOut.WriteLine("PgwDataRow");
             stream.ReadByte();
             var length = stream.ReadInt32();
             var colCount = stream.ReadInt16();

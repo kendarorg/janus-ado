@@ -17,7 +17,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(ReadSeekableStream stream)
         {
-            System.Diagnostics.Trace.WriteLine("ErrorResponse");
+            ConsoleOut.WriteLine("ErrorResponse");
             stream.ReadByte();
             var length = stream.ReadInt32();
             var severity = (char)stream.ReadByte();
