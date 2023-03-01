@@ -21,7 +21,7 @@ namespace PgWireAdo.wire.server
 
         public IDictionary<string, string> ServerParameters => _serverParameters;
 
-        public override void Write(ReadSeekableStream stream)
+        public override void Write(PgwByteBuffer stream)
         {
             ConsoleOut.WriteLine("StartupMessage");
             var data = new List<byte[]>();
@@ -37,43 +37,34 @@ namespace PgWireAdo.wire.server
                 length += k.Length+1;
                 length += v.Length+1;
             }
-            WriteInt32(length);
-            WriteByte(0x00);
-            WriteByte(0x03);
-            WriteByte(0x00);
-            WriteByte(0x00);
+            stream.WriteInt32(length);
+            stream.WriteByte(0x03);
+            stream.WriteByte(0x00);
+            stream.WriteByte(0x00);
+            stream.WriteByte(0x00);
             foreach (byte[] row in data)
             {
-                Write(row);
+                stream.Write(row);
             }
-            Flush(stream);
+            stream.Flush();
 
             //SEND THE MESSAGE PLUS PARAMETERS
-            var authenticationOk = new AuthenticationOk();
-
-            if (authenticationOk.IsMatching(stream))
+            var authenticationOk =stream.WaitFor< AuthenticationOk>();
+            var backendKeyData =stream.WaitFor< BackendKeyData>();
+            var parameterStatus = stream.WaitFor< ParameterStatus>();
+            while (parameterStatus != null)
             {
-                authenticationOk.Read(stream);
-                var backendKeyData = new BackendKeyData();
-                if (backendKeyData.IsMatching(stream))
-                {
-                    backendKeyData.Read(stream);
-                    var parameterStatus = new ParameterStatus();
-                    while (parameterStatus.IsMatching(stream))
-                    {
-                        parameterStatus.Read(stream);
-                        _serverParameters.Add(parameterStatus.Key,parameterStatus.Value);
-                    }
-
-                    var readyForQuery = new ReadyForQuery();
-                    if (readyForQuery.IsMatching(stream))
-                    {
-                        readyForQuery.Read(stream);
-                        return;
-                    }
-                }
+                _serverParameters.Add(parameterStatus.Key, parameterStatus.Value);
+                parameterStatus = stream.WaitFor<ParameterStatus>();
             }
-            throw new InvalidOperationException("[ERROR] StartupMessage");
+
+            var readyForQuery = stream.WaitFor< ReadyForQuery>();
+
+            if (authenticationOk == null || readyForQuery == null || backendKeyData == null)
+            {
+                throw new InvalidOperationException("[ERROR] StartupMessage");
+
+            }
         }
     }
 }

@@ -48,8 +48,9 @@ public class PgwByteBuffer {
     }
 
     public void read(PgwClientMessage pgwClientMessage) throws IOException {
-        System.out.println("[SERVER] Recv: "+pgwClientMessage.getClass().getSimpleName());
+        System.out.println("[SERVER] BEG Recv: "+pgwClientMessage.getClass().getSimpleName());
         pgwClientMessage.read(this);
+        System.out.println("[SERVER] END Recv: "+pgwClientMessage.getClass().getSimpleName());
     }
 
     public PgwByteBuffer write(PgwServerMessage pgwServerMessage) throws IOException {

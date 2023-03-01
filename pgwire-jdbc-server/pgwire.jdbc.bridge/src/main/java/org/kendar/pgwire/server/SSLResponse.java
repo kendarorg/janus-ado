@@ -8,6 +8,6 @@ public class SSLResponse implements PgwServerMessage{
     @Override
     public void write(PgwByteBuffer pgwByteBuffer) throws IOException {
         pgwByteBuffer.writeByte((byte) 'N');
-        //pgwByteBuffer.writeInt(0);
+        //pgwByteBuffer.writeInt(4);
     }
 }

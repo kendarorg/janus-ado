@@ -20,23 +20,22 @@ public class ParseMessage : PgwServerMessage
     }
 
 
-    public override void Write(ReadSeekableStream stream)
+    public override void Write(PgwByteBuffer stream)
     {
         ConsoleOut.WriteLine("ParseMessage " + _query);
         if (_query == null) throw new InvalidOperationException("Missing query");
         int length =  4 + _query.Length + 1 + _preparedStatementName.Length + 1+2+ _oids.Count*4;
-        WriteByte((byte)'P');
-        WriteInt32(length);
-        WriteASCIIString(_preparedStatementName);
-        WriteByte(0);
-        WriteASCIIString(_query);
-        WriteByte(0);
-        WriteInt16((short)_oids.Count);
+        stream.WriteByte((byte)'P');
+        stream.WriteInt32(length);
+        stream.WriteASCIIString(_preparedStatementName);
+        stream.WriteByte(0);
+        stream.WriteASCIIString(_query);
+        stream.WriteByte(0);
+        stream.WriteInt16((short)_oids.Count);
         foreach (var oid in _oids)
         {
-            WriteInt32(length);
+            stream.WriteInt32(length);
         }
-        Flush(stream);
     }
 
     

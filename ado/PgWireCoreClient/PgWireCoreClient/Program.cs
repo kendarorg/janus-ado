@@ -3,6 +3,7 @@
 using System.Data;
 using System.Data.Common;
 using PgWireAdo.ado;
+using PgWireAdo.utils;
 
 DbProviderFactories.RegisterFactory("Npgsql", Npgsql.NpgsqlFactory.Instance);
 
@@ -11,9 +12,9 @@ using (DataTable providers = DbProviderFactories.GetFactoryClasses())
     ConsoleOut.WriteLine("Available ADO.NET Data Providers:");
     foreach (DataRow prov in providers.Rows)
     {
-        ConsoleOut.WriteLine("Name:{0}", prov["Name"]);
-        ConsoleOut.WriteLine("Description:{0}", prov["Description"]);
-        ConsoleOut.WriteLine("Invariant Name:{0}", prov["InvariantName"]);
+        ConsoleOut.WriteLine("Name:"+ prov["Name"]);
+        ConsoleOut.WriteLine("Description:"+ prov["Description"]);
+        ConsoleOut.WriteLine("Invariant Name:"+ prov["InvariantName"]);
     }
 }
 
@@ -40,7 +41,7 @@ if (reader.HasRows)
 {
     while (reader.Read())
     {
-        ConsoleOut.WriteLine("{0}\t{1}", reader.GetInt32(0),
+        ConsoleOut.WriteLine(reader.GetInt32(0)+"\t"+
             reader.GetString(1));
     }
 }

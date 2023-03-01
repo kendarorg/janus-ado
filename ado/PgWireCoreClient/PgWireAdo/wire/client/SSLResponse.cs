@@ -10,20 +10,12 @@ namespace PgWireAdo.wire.client
 {
     public class SSLResponse :PgwClientMessage
     {
-        public override bool IsMatching(ReadSeekableStream stream)
-        {
-            return ReadData(stream, () =>
-            {
-                var dd = stream.ReadByte();
-                return dd == (byte)BackendMessageCode.NoticeResponse;
-            });
 
-        }
-
-        public override void Read(ReadSeekableStream stream)
+        public override void Read(DataMessage stream)
         {
             ConsoleOut.WriteLine("SSLResponse");
-            stream.ReadByte();
         }
+
+        public override BackendMessageCode BeType => BackendMessageCode.NoticeResponse;
     }
 }

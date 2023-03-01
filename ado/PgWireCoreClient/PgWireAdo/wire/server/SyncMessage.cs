@@ -18,12 +18,11 @@ namespace PgWireAdo.wire.server
         }
         
 
-        public override void Write(ReadSeekableStream stream)
+        public override void Write(PgwByteBuffer stream)
         {
             ConsoleOut.WriteLine("SyncMessage");
-            WriteByte((byte)'S');
-            WriteInt32(4);
-            Flush(stream);
+            stream.WriteByte((byte)'S');
+            stream.WriteInt32(4);
         }
     }
 }

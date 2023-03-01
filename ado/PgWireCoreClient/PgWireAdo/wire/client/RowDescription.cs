@@ -9,26 +9,17 @@ namespace PgWireAdo.wire.client
 {
     public class RowDescription : PgwClientMessage
     {
+        public override BackendMessageCode BeType => BackendMessageCode.RowDescription;
         private List<RowDescriptor> _fields = new ();
 
         public List<RowDescriptor> Fields => _fields;
 
 
-        public override bool IsMatching(ReadSeekableStream stream)
-        {
-            return ReadData(stream, () =>
-                {
-                    var byteread = stream.ReadByte();
-                    return byteread == (byte)BackendMessageCode.RowDescription;
-                }
-                );
-        }
+        
 
-        public override void Read(ReadSeekableStream stream)
+        public override void Read(DataMessage stream)
         {
             ConsoleOut.WriteLine("RowDescription");
-            stream.ReadByte();
-            var length = stream.ReadInt32();
             var closCount = stream.ReadInt16();
             for (var i = 0; i < closCount; i++)
             {

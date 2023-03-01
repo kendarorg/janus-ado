@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
-using System.IO;
-using System.Linq;
+using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Input;
+using ConcurrentLinkedList;
 using PgWireAdo.utils;
 using PgWireAdo.wire;
 using PgWireAdo.wire.client;
@@ -20,8 +15,10 @@ public class PgwConnection : DbConnection
     private PgwConnectionString _options;
     private string _connectionString;
     private ConnectionState _state = ConnectionState.Closed;
-    private TcpClient _client;
-    private ReadSeekableStream _stream;
+    private Socket _client;
+    private PgwByteBuffer _byteBuffer;
+
+    public PgwByteBuffer Stream { get { return _byteBuffer; } }
 
     public PgwConnection(string connectionString)
     {
@@ -33,19 +30,66 @@ public class PgwConnection : DbConnection
         
     }
 
+    private ConcurrentLinkedList<DataMessage> inputQueue = new();
+    private Thread _queueThread;
+
+    public ConcurrentLinkedList<DataMessage> InputQueue { get { return inputQueue; } }
+
+
+
     public override void Open()
     {
-        _client = new TcpClient(_options.DataSource, _options.Port);
-        _stream = new ReadSeekableStream(_client.GetStream(), 1024);
-        _stream.ReadTimeout = 10;
-        _state = ConnectionState.Open;
-        var sslNegotiation = new SSLNegotation();
-        sslNegotiation.Write(_stream);
-        var parameters = new Dictionary<String, String>();
-        parameters.Add("database", Database);
-        var startup = new StartupMessage(parameters);
-        startup.Write(_stream);
+        /*IPEndPoint remoteEP = null;
+        IPAddress ipAddress = null;
+        if (_options.DataSource == "localhost")
+        {
+            ipAddress = IPAddress.Loopback;
+            remoteEP = new IPEndPoint(ipAddress, _options.Port);
+        }
+        else
+        {
+            IPHostEntry host = Dns.GetHostEntry(_options.DataSource);
+            
+            if (host == null || host.AddressList.Length == 0)
+            {
+                ipAddress = IPAddress.Parse(_options.DataSource);
+            }
+            else
+            {
+                ipAddress = host.AddressList[0];
+            }
+            
+            remoteEP = new IPEndPoint(ipAddress, _options.Port);
+        }
+        
+
+        // Create a TCP/IP  socket.
+        _client = new Socket(ipAddress.AddressFamily,
+            SocketType.Stream, ProtocolType.Tcp);
+        //_client.NoDelay = true;
+
+        _client.Connect(remoteEP);*/
+        var tcpClient = new TcpClient(_options.DataSource, _options.Port);
+        tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+
+        _byteBuffer = new PgwByteBuffer(tcpClient, this);
+        
+
+        _queueThread = new Thread(() =>
+        {
+            
+            ReadDataFromStream(_byteBuffer);
+        });
+        _queueThread.Start();
+        _byteBuffer.Write(new SSLNegotation());
+        var response = _byteBuffer.WaitFor<SSLResponse>();
+        
+         var parameters = new Dictionary<String, String>();
+         parameters.Add("database", Database);
+         var startup = new StartupMessage(parameters);
+         _byteBuffer.Write(startup);
     }
+
 
     public override Task OpenAsync(CancellationToken cancellationToken)
     {
@@ -60,7 +104,6 @@ public class PgwConnection : DbConnection
             _state = ConnectionState.Closed;
             if (disposing)
             {
-                _stream.Dispose();
                 _client.Dispose();
             }
         }
@@ -85,22 +128,15 @@ public class PgwConnection : DbConnection
     public override ConnectionState State => _state;
     public override string DataSource => _options.DataSource;
     public override string ServerVersion => _options.ServerVersion;
-
-    public ReadSeekableStream Stream => _stream;
+    
 
 
     public override void Close()
     {
         _state = ConnectionState.Closed;
-        if (_stream == null)
-        {
-            return;
-        }
-        var terminate = new TerminateMessage();
-        terminate.Write(_stream);
-        _stream.Dispose();
+        
+        _byteBuffer.Write(new TerminateMessage());
         _client.Dispose();
-        _stream = null;
         _client = null;
 
     }
@@ -121,19 +157,10 @@ public class PgwConnection : DbConnection
     protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
     {
         var result= new PgwTransaction(this, isolationLevel);
-        var queryMessage = new QueryMessage("JANUS:BEGIN_TRANSACTION");
-        queryMessage.Write(Stream);
-        var commandComplete = new CommandComplete();
-        if (commandComplete.IsMatching(Stream))
-        {
-            commandComplete.Read(Stream);
-        }
-        var readyForQuery = new ReadyForQuery();
-        if (readyForQuery.IsMatching(Stream))
-        {
-            readyForQuery.Read(Stream);
-        }
-
+        _byteBuffer.Write(new QueryMessage("JANUS:BEGIN_TRANSACTION"));
+        _byteBuffer.WaitFor<CommandComplete>();
+        _byteBuffer.WaitFor<ReadyForQuery>();
+        
         return result;
     }
 
@@ -143,5 +170,34 @@ public class PgwConnection : DbConnection
     }
 
     #endregion
+
+    private bool _running = true;
+
+    public bool Running { get { return _running; } }
+    private void ReadDataFromStream(PgwByteBuffer buffer)
+    {
+        var sslNegotiationDone =false;
+        var header = new byte[5];
+        while (_running)
+        {
+            var messageType = (char)buffer.ReadByte();
+            if (messageType == 'N' && sslNegotiationDone == false)
+            {
+                sslNegotiationDone=true;
+                var sslN = new DataMessage((char)messageType, 0, new byte[0]);
+                inputQueue.TryAdd(sslN);
+                continue;
+            }
+            var messageLength = buffer.ReadInt32();
+            var data = new byte[0];
+            if (messageLength > 4)
+            {
+                data = buffer.Read(messageLength - 4);
+            }
+            
+            var dm = new DataMessage((char)messageType, messageLength, data);
+            inputQueue.TryAdd(dm);
+        }
+    }
 }
 

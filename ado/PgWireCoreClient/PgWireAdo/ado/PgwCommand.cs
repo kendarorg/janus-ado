@@ -74,22 +74,15 @@ public class PgwCommand : DbCommand,IDisposable
         var stream = ((PgwConnection)DbConnection).Stream;
          CallQuery();
          var result = 0;
-       var commandComplete = new CommandComplete();
-        while (commandComplete.IsMatching(stream))
+       var commandComplete = stream.WaitFor<CommandComplete>();
+        while (commandComplete!=null)
         {
-            commandComplete.Read(stream);
             result += commandComplete.Count;
+            commandComplete = stream.WaitFor<CommandComplete>();
         }
-
-        var syncMessage = new SyncMessage();
-        syncMessage.Write(stream);
-        var readyForQuery = new ReadyForQuery();
-        if (readyForQuery.IsMatching(stream))
-        {
-            readyForQuery.Read(stream);
-        }
-
-
+        stream.Write(new SyncMessage());
+        var readyForQuery = stream.WaitFor<ReadyForQuery>();
+        
 
         return result;
     }
@@ -125,26 +118,23 @@ public class PgwCommand : DbCommand,IDisposable
         
         var stream = ((PgwConnection)DbConnection).Stream;
         CallQuery();
-        var sync0 = new SyncMessage();
-        sync0.Write(stream);
+        stream.Write(new SyncMessage());
         object result = null;
-        var dataRow = new PgwDataRow(_fields);
+        var dataRow = stream.WaitFor<PgwDataRow>();
         var hasData = false;
-        if (dataRow.IsMatching(stream))
+        if (dataRow != null)
         {
-            hasData = true;
-            dataRow.Read(stream);
+            dataRow.Descriptors = _fields;
             if (dataRow.Data.Count > 0)
             {
                 var field = _fields[0];
                 result = PgwConverter.convert(field, dataRow.Data[0]);
             }
         }
-
-        var commandComplete = new CommandComplete();
-        while (commandComplete.IsMatching(stream))
+        
+        var commandComplete = stream.WaitFor <CommandComplete>();
+        while (commandComplete!=null)
         {
-            commandComplete.Read(stream);
             if (!hasData)
             {
                 if (result == null) result = 0;
@@ -156,16 +146,13 @@ public class PgwCommand : DbCommand,IDisposable
             {
                 break;
             }
+            commandComplete = stream.WaitFor<CommandComplete>();
             //
         }
 
-        var sync = new SyncMessage();
-        sync.Write(stream);
-        var readyForQuery = new ReadyForQuery();
-        if (readyForQuery.IsMatching(stream))
-        {
-            readyForQuery.Read(stream);
-        }
+        stream.Write(new SyncMessage());
+        var readyForQuery = stream.WaitFor < ReadyForQuery>();
+        
         return result;
     }
 
@@ -199,41 +186,21 @@ public class PgwCommand : DbCommand,IDisposable
             throw new InvalidOperationException("Missing query");
         }
         _statementId = Guid.NewGuid().ToString();
-        var queryMessage =
-            new ParseMessage(_statementId, query, this.Parameters);
-        queryMessage.Write(stream);
-        var parseComplete = new ParseComplete();
-        if (parseComplete.IsMatching(stream))
-        {
-            parseComplete.Read(stream);
-        }
+        stream.Write(new ParseMessage(_statementId, query, this.Parameters));
+        var parseComplete = stream.WaitFor<ParseComplete>();
+        
         _portalId = Guid.NewGuid().ToString();
-        var bindMessage = new BindMessage(_statementId, _portalId, DbParameterCollection);
-        bindMessage.Write(stream);
-        var bindComplete = new BindComplete();
-        if (bindComplete.IsMatching(stream))
+        stream.Write(new BindMessage(_statementId, _portalId, DbParameterCollection));
+        var bindComplete = stream.WaitFor < BindComplete>();
+
+        stream.Write(new DescribeMessage('P', _portalId));
+
+        stream.Write(new ExecuteMessage(_portalId, 0));
+
+        var rowDescription = stream.WaitFor <RowDescription>();
+        if (rowDescription!=null)
         {
-            bindComplete.Read(stream);
-        }
-
-        
-
-        var describeMessage = new DescribeMessage('P', _portalId);
-        describeMessage.Write(stream);
-
-        var executeMessage = new ExecuteMessage(_portalId, 0);
-        executeMessage.Write(stream);
-
-        var rowDescription = new RowDescription();
-        if (rowDescription.IsMatching(stream))
-        {
-            rowDescription.Read(stream);
             _fields = rowDescription.Fields;
-        }
-        
-        if (errorMessage.IsMatching(stream))
-        {
-            errorMessage.Read(stream);
         }
 
     }

@@ -10,19 +10,12 @@ namespace PgWireAdo.wire.client
 {
     public class ReadyForQuery:PgwClientMessage
     {
-        public override bool IsMatching(ReadSeekableStream stream)
-        {
-            return ReadData(stream, () =>
-                stream.ReadByte() == (byte)BackendMessageCode.ReadyForQuery);
-        }
-
-        public override void Read(ReadSeekableStream stream)
+        public override BackendMessageCode BeType => BackendMessageCode.ReadyForQuery;
+        
+        public override void Read(DataMessage stream)
         {
             ConsoleOut.WriteLine("ReadyForQuery");
-            var id =(char)stream.ReadByte();
-            var len = stream.ReadInt32();
             var type = (char)stream.ReadByte();
-            ConsoleOut.WriteLine("");
         }
     }
 }

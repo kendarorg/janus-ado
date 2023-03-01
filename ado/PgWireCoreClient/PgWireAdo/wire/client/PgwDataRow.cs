@@ -7,38 +7,34 @@ namespace PgWireAdo.wire.client
 {
     public class PgwDataRow:PgwClientMessage
     {
+        public override BackendMessageCode BeType => BackendMessageCode.DataRow;
         private readonly List<RowDescriptor> _descriptors;
 
         private List<Object> _data = new();
 
-        public PgwDataRow(List<RowDescriptor> descriptors)
+        public PgwDataRow()
         {
-            _descriptors = descriptors;
+            
         }
 
         public List<object> Data => _data;
 
-        public override bool IsMatching(ReadSeekableStream stream)
+        public List<RowDescriptor> Descriptors
         {
-            return ReadData(stream, () =>
-                   {
-                       var rowByte = (byte)stream.ReadByte();
-                       return rowByte == (byte)BackendMessageCode.DataRow;
-                   });
+            get => _descriptors;
+            set => throw new NotImplementedException();
         }
 
-        public override void Read(ReadSeekableStream stream)
+
+        public override void Read(DataMessage stream)
         {
             ConsoleOut.WriteLine("PgwDataRow");
-            stream.ReadByte();
-            var length = stream.ReadInt32();
             var colCount = stream.ReadInt16();
             for (var i = 0; i < colCount; i++)
             {
                 var descriptor = _descriptors[i];
                 var colLength = stream.ReadInt32();
-                var data = new byte[colLength];
-                stream.Read(data, 0, colLength);
+                var data = stream.ReadBytes(colLength);
                 if(colLength==0){
                     _data.Add(null);
                 }

@@ -10,21 +10,11 @@ namespace PgWireAdo.wire.client
 {
     public class ParseComplete:PgwClientMessage
     {
-        public override bool IsMatching(ReadSeekableStream stream)
-        {
-            return ReadData(stream, () =>
-                {
-                    var res = (byte)stream.ReadByte();
-                    return res == (byte)BackendMessageCode.ParseComplete;
-                }
-                );
-        }
 
-        public override void Read(ReadSeekableStream stream)
+        public override BackendMessageCode BeType => BackendMessageCode.ParseComplete;
+        public override void Read(DataMessage stream)
         {
             ConsoleOut.WriteLine("ParseComplete");
-            stream.ReadByte();
-            stream.ReadInt32();
         }
     }
 }
