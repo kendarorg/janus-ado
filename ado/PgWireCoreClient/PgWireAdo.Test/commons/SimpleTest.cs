@@ -12,7 +12,7 @@ namespace Npgsql.Tests;
         [Test]
         public void Test1()
         {
-            ConsoleOut.setup((String a) => { TestContext.WriteLine(a); });
+            ConsoleOut.setup((String a) => { TestContext.Out.WriteLine(a); });
             using (var conn = OpenConnection())
             {
                 var cmd = conn.CreateCommand();

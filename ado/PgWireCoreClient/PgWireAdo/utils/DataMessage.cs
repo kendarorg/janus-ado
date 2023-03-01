@@ -6,6 +6,7 @@ namespace PgWireAdo.utils;
 
 public class DataMessage
 {
+    public long Timestamp { get; }
     private int _cursor = 0;
     public char Type { get; }
     public int Length { get; }
@@ -14,6 +15,7 @@ public class DataMessage
 
     public DataMessage(char type, int length, byte[] data)
     {
+        Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         Type = type;
         Length = length;
         Data = data;

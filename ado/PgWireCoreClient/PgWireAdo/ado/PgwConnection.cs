@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System.Collections.Concurrent;
+using System.Data;
 using System.Data.Common;
 using System.Net;
 using System.Net.Http;
@@ -31,10 +32,10 @@ public class PgwConnection : DbConnection
         
     }
 
-    private ConcurrentLinkedList<DataMessage> inputQueue = new();
+    private ConcurrentBag<DataMessage> inputQueue = new();
     private Thread _queueThread;
 
-    public ConcurrentLinkedList<DataMessage> InputQueue { get { return inputQueue; } }
+    public ConcurrentBag<DataMessage> InputQueue { get { return inputQueue; } }
 
 
 
@@ -42,6 +43,11 @@ public class PgwConnection : DbConnection
     {
         
         _tcpClient = new TcpClient(_options.DataSource, _options.Port);
+        _tcpClient.ReceiveTimeout = 2000;
+        _tcpClient.SendTimeout = 2000;
+        _tcpClient.ReceiveBufferSize = 2000000;
+        _tcpClient.SendBufferSize = 2000000;
+        //_tcpClient.NoDelay=true;
         _tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
         _byteBuffer = new PgwByteBuffer(_tcpClient, this);
@@ -53,8 +59,10 @@ public class PgwConnection : DbConnection
             ReadDataFromStream(_byteBuffer);
         });
         _queueThread.Start();
+        Thread.Sleep(500);
         _byteBuffer.Write(new SSLNegotation());
         var response = _byteBuffer.WaitFor<SSLResponse>();
+        ConsoleOut.WriteLine("Response "+(response!=null));
         
          var parameters = new Dictionary<String, String>();
          parameters.Add("database", Database);
@@ -147,8 +155,10 @@ public class PgwConnection : DbConnection
     {
         var result= new PgwTransaction(this, isolationLevel);
         _byteBuffer.Write(new QueryMessage("JANUS:BEGIN_TRANSACTION"));
-        _byteBuffer.WaitFor<CommandComplete>();
-        _byteBuffer.WaitFor<ReadyForQuery>();
+        var cc = _byteBuffer.WaitFor<CommandComplete>();
+        var rq = _byteBuffer.WaitFor<ReadyForQuery>();
+
+        
         
         return result;
     }
@@ -177,7 +187,7 @@ public class PgwConnection : DbConnection
                 {
                     sslNegotiationDone = true;
                     var sslN = new DataMessage((char)messageType, 0, new byte[0]);
-                    inputQueue.TryAdd(sslN);
+                    inputQueue.Add(sslN);
                     continue;
                 }
 
@@ -189,7 +199,7 @@ public class PgwConnection : DbConnection
                 }
 
                 var dm = new DataMessage((char)messageType, messageLength, data);
-                inputQueue.TryAdd(dm);
+                inputQueue.Add(dm);
             }
         }
         catch (Exception ex)

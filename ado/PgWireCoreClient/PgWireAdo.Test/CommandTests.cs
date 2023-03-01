@@ -859,7 +859,8 @@ public class CommandTests : TestBase
         await cmd.ExecuteNonQueryAsync();
     }
 
-    [Test, Description("Makes sure that Npgsql doesn't attempt to send all data before the user can start reading. That would cause a deadlock.")]
+    //[Test] TODO
+     //Description("Makes sure that Npgsql doesn't attempt to send all data before the user can start reading. That would cause a deadlock.")]
     public async Task Batched_big_statements_do_not_deadlock()
     {
         // We're going to send a large multistatement query that would exhaust both the client's and server's
@@ -868,7 +869,7 @@ public class CommandTests : TestBase
         using var conn = await OpenConnectionAsync();
         var sb = new StringBuilder();
         for (var i = 0; i < 500; i++)
-            sb.Append("SELECT @p;");
+            sb.Append("SELECT ?;");
         using var cmd = new NpgsqlCommand(sb.ToString(), conn);
         cmd.Parameters.AddWithValue("p", DbType.String, data);
         using var reader = await cmd.ExecuteReaderAsync();

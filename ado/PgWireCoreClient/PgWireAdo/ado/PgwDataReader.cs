@@ -20,15 +20,18 @@ public class PgwDataReader : DbDataReader
     private readonly string _commandText;
     private readonly List<RowDescriptor> _fields;
     private CommandBehavior _behavior = CommandBehavior.Default;
-    private List<object> _currentRow;
+    private int _lastExecuteRequest;
+    private int _currentRow=-1;
+    private List<List<object>> _rows = new ();
 
     public PgwDataReader(DbConnection dbConnection, string commandText, List<RowDescriptor> fields,
-        CommandBehavior behavior = CommandBehavior.Default)
+        CommandBehavior behavior , int lastExecuteRequest)
     {
         _dbConnection = dbConnection;
         _commandText = commandText;
         _fields = fields;
         _behavior = behavior;
+        _lastExecuteRequest = lastExecuteRequest;
     }
 
     public override int FieldCount => _fields.Count;
@@ -37,7 +40,7 @@ public class PgwDataReader : DbDataReader
     {
         get
         {
-            return PgwConverter.convert(_fields[ordinal], _currentRow[ordinal]);
+            return PgwConverter.convert(_fields[ordinal], _rows[_currentRow][ordinal]);
         }
     }
 
@@ -141,7 +144,7 @@ public class PgwDataReader : DbDataReader
     {
         try
         {
-            return (string)_currentRow[ordinal];
+            return (string)_rows[_currentRow][ordinal];
         }
         catch (NullReferenceException)
         {
@@ -151,7 +154,7 @@ public class PgwDataReader : DbDataReader
 
     public override object GetValue(int ordinal)
     {
-        return _currentRow[ordinal];
+        return _rows[_currentRow][ordinal];
     }
 
     public override int GetValues(object[] values)
@@ -161,7 +164,7 @@ public class PgwDataReader : DbDataReader
 
     public override bool IsDBNull(int ordinal)
     {
-        return _currentRow[ordinal] == null;
+        return _rows[_currentRow][ordinal] == null;
     }
 
 
@@ -190,54 +193,63 @@ public class PgwDataReader : DbDataReader
         if (DbConnection.State == ConnectionState.Closed) return false;
         if ((_behavior & CommandBehavior.SingleRow) != 0)
         {
-            if (_currentRow != null)
-            {
-                return false;
-            }
+            _lastExecuteRequest = 1;
         }
         var stream = ((PgwConnection)DbConnection).Stream;
 
-        if (_currentRow == null)
+        if (_currentRow >= _rows.Count)
         {
             stream.Write(new SyncMessage());
         }
 
-
-        var dataRow = stream.WaitFor<PgwDataRow>((d) =>
+        if (_currentRow == -1)
         {
-            d.Descriptors = _fields;
-        });
-        if (dataRow != null)
-        {
-            if (dataRow.Data.Count > 0)
+            var total = _lastExecuteRequest==0?int.MaxValue: _lastExecuteRequest;
+            _currentRow = -1;
+            _rows = new List<List<object>>();
+            for (var i = 0; i < total; i++)
             {
-                _currentRow = dataRow.Data;
+                var clientMessage = stream.WaitFor<PgwDataRow, CommandComplete>((d) => { d.Descriptors = _fields; });
+
+                if (clientMessage is PgwDataRow)
+                {
+                    var dataRow = (PgwDataRow)clientMessage;
+                    if (dataRow.Data.Count > 0)
+                    {
+                        _rows.Add(dataRow.Data);
+                    }
+                }
+                else if (clientMessage is CommandComplete)
+                {
+                    stream.Write(new SyncMessage());
+                    stream.WaitFor<ReadyForQuery>();
+                    
+                    break;
+                }
+            }
+
+            if (_rows.Count>0)
+            {
+                _currentRow = 0;
                 return true;
             }
-        }
-
-        if (stream.WaitFor<CommandComplete>() != null)
-        {
             if ((_behavior & CommandBehavior.CloseConnection) != 0)
             {
                 DbConnection.Close();
-                return false;
             }
-            stream.Write(new SyncMessage());
-            stream.WaitFor<ReadyForQuery>();
-            return false;
-        }
-
-
-        if ((_behavior & CommandBehavior.CloseConnection) != 0)
-        {
-            DbConnection.Close();
             return false;
         }
         else
         {
-            stream.Write(new SyncMessage());
-            stream.WaitFor<ReadyForQuery>();
+            if (_currentRow < (_rows.Count - 1))
+            {
+                _currentRow++;
+                return true;
+            }
+            if ((_behavior & CommandBehavior.CloseConnection) != 0)
+            {
+                DbConnection.Close();
+            }
             return false;
         }
 

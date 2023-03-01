@@ -105,12 +105,13 @@ public class PgwSocketHandler implements Runnable, Context {
             }
         }
         catch (EOFException e) {
-            e.printStackTrace();
+            System.out.println("[SERVER] Closed main:EOFException");
         }
         catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("[SERVER] Closed main:IOException");
         }
         finally {
+            running.set(false);
             try {
                 if (out != null) {
                     out.close();
@@ -121,8 +122,9 @@ public class PgwSocketHandler implements Runnable, Context {
                 }
             }
             catch (IOException e) {
-                e.printStackTrace();
+
             }
+            System.out.println("[SERVER] Closed main");
         }
     }
 
@@ -135,8 +137,8 @@ public class PgwSocketHandler implements Runnable, Context {
 
     public void respondToClient() {
         char lastFoundedType = '0';
-            while (running.get()) {
-                try {
+        while (running.get()) {
+            try {
                 var item = inputQueue.poll();
                 if (item == null) {
                     sleep(10);
@@ -171,19 +173,19 @@ public class PgwSocketHandler implements Runnable, Context {
                 System.out.println("[SERVER] Recv: "+message.getClass().getSimpleName());
                 message.read(item);
                 message.handle(this);
-                }catch (Exception ex){
-                    try {
-                        setTransaction(false);
-                        System.out.println("[ERROR] On message "+lastFoundedType+" "+ex.getMessage());
-                        this.getBuffer().write(new ErrorResponse(ex.getMessage()));
-                        this.getBuffer().write(new ReadyForQuery(inTransaction()));
-                    } catch (IOException e) {
+            }catch (Exception ex){
+                try {
+                    setTransaction(false);
+                    System.out.println("[ERROR] On message "+lastFoundedType+" "+ex.getMessage());
+                    this.getBuffer().write(new ErrorResponse(ex.getMessage()));
+                    this.getBuffer().write(new ReadyForQuery(inTransaction()));
+                } catch (IOException e) {
 
-                    }
-                    ex.printStackTrace();
                 }
+                //ex.printStackTrace();
             }
-
+        }
+        System.out.println("[SERVER] Closed respondToClient");
     }
 
 

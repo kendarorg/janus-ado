@@ -27,6 +27,7 @@ public class PgwCommand : DbCommand,IDisposable
     private List<RowDescriptor> _fields;
     private string _statementId;
     private string _portalId;
+    private int _lastExecuteRequest;
 
     public PgwCommand(DbConnection dbConnection)
     {
@@ -105,7 +106,7 @@ public class PgwCommand : DbCommand,IDisposable
     protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
     {
         CallQuery();
-        var result = new PgwDataReader(DbConnection, CommandText, _fields,behavior);
+        var result = new PgwDataReader(DbConnection, CommandText, _fields,behavior,this._lastExecuteRequest);
         
         return result;
     }
@@ -130,6 +131,7 @@ public class PgwCommand : DbCommand,IDisposable
             if (dataRow.Data.Count > 0)
             {
                 var field = _fields[0];
+                hasData = true;
                 result = PgwConverter.convert(field, dataRow.Data[0]);
             }
         }
@@ -197,6 +199,7 @@ public class PgwCommand : DbCommand,IDisposable
 
         stream.Write(new DescribeMessage('P', _portalId));
 
+        _lastExecuteRequest = 0;
         stream.Write(new ExecuteMessage(_portalId, 0));
 
         var commandReceived = stream.WaitFor<CommandComplete,RowDescription>();
@@ -204,9 +207,13 @@ public class PgwCommand : DbCommand,IDisposable
         {
             stream.Write(new SyncMessage());
         }
-        else
+        else if (commandReceived is RowDescription)
         {
             _fields = ((RowDescription)commandReceived).Fields;
+        }
+        else
+        {
+            throw new PgwException("Connection Closed");
         }
 
     }

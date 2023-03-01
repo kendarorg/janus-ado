@@ -88,20 +88,20 @@ public class BaseExecutor {
                 if (conn.getAutoCommit()) conn.setAutoCommit(false);
                 context.setTransaction(true);
                 context.getBuffer().write(new CommandComplete("RESULT 0"));
-                context.getBuffer().write(new ReadyForQuery(true));
+                //context.getBuffer().write(new ReadyForQuery(true));
 
             } else if (query.equalsIgnoreCase("JANUS:ROLLBACK_TRANSACTION")) {
                 conn.rollback();
                 context.setTransaction(false);
                 conn.setAutoCommit(true);
                 context.getBuffer().write(new CommandComplete("RESULT 0"));
-                context.getBuffer().write(new ReadyForQuery(false));
+                //context.getBuffer().write(new ReadyForQuery(false));
             } else if (query.equalsIgnoreCase("JANUS:COMMIT_TRANSACTION")) {
                 conn.commit();
                 context.setTransaction(false);
                 conn.setAutoCommit(true);
                 context.getBuffer().write(new CommandComplete("RESULT 0"));
-                context.getBuffer().write(new ReadyForQuery(false));
+                //context.getBuffer().write(new ReadyForQuery(false));
             } else if (query.startsWith("JANUS:SET_SAVEPOINT:")) {
                 var val = query.split(":");
                 if (val[2].isEmpty()) {
@@ -112,7 +112,7 @@ public class BaseExecutor {
                     context.put("savepoint_" + val[2], savepoint);
                 }
                 context.getBuffer().write(new CommandComplete("RESULT 0"));
-                context.getBuffer().write(new ReadyForQuery(false));
+                //context.getBuffer().write(new ReadyForQuery(false));
             } else if (query.startsWith("JANUS:RELEASE_SAVEPOINT:")) {
                 var val = query.split(":");
 
@@ -121,7 +121,7 @@ public class BaseExecutor {
                     conn.releaseSavepoint(svp);
                 }
                 context.getBuffer().write(new CommandComplete("RESULT 0"));
-                context.getBuffer().write(new ReadyForQuery(false));
+                //context.getBuffer().write(new ReadyForQuery(false));
             } else if (query.startsWith("JANUS:ROLLBACK_SAVEPOINT:")) {
                 var val = query.split(":");
 
@@ -130,7 +130,7 @@ public class BaseExecutor {
                     conn.rollback(svp);
                 }
                 context.getBuffer().write(new CommandComplete("RESULT 0"));
-                context.getBuffer().write(new ReadyForQuery(false));
+                //context.getBuffer().write(new ReadyForQuery(false));
             } else {
                 throw new SQLException("NOT IMPLEMENTED SPECIAL QUERIES");
             }

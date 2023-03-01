@@ -63,7 +63,6 @@ namespace PgWireAdo.wire.server
             if (authenticationOk == null || readyForQuery == null || backendKeyData == null)
             {
                 throw new InvalidOperationException("[ERROR] StartupMessage");
-
             }
         }
     }

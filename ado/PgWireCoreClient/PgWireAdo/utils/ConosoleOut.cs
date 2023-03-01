@@ -1,4 +1,6 @@
-﻿namespace PgWireAdo.utils;
+﻿using System.Diagnostics;
+
+namespace PgWireAdo.utils;
 
 public class ConsoleOut
 {
@@ -9,6 +11,7 @@ public class ConsoleOut
     public static void WriteLine(String data)
     {
         _action.Invoke(DateTime.Now+ " "+data);
+        Trace.Flush();
     }
 
     public static void setup(Action<string> action)

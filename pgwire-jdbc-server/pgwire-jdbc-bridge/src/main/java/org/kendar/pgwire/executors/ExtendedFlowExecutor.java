@@ -6,6 +6,7 @@ import org.kendar.pgwire.flow.ParseMessage;
 import org.kendar.pgwire.flow.SyncMessage;
 import org.kendar.pgwire.server.CommandComplete;
 import org.kendar.pgwire.server.EmptyQueryResponse;
+import org.kendar.pgwire.server.ErrorResponse;
 import org.kendar.pgwire.utils.PgwConverter;
 import org.kendar.pgwire.utils.SqlParseResult;
 import org.kendar.pgwire.utils.StringParser;
@@ -51,6 +52,11 @@ public class ExtendedFlowExecutor extends BaseExecutor {
 
         }catch (Exception ex){
             ex.printStackTrace();
+            try {
+                context.getBuffer().write(new ErrorResponse(ex.getMessage()));
+            } catch (IOException e) {
+
+            }
         }
     }
 
@@ -130,8 +136,6 @@ public class ExtendedFlowExecutor extends BaseExecutor {
             result = st.execute(singleQuery);
         }
         if(result){
-            var resultSet= st.getResultSet();
-
             context.put("result_"  + portal, st.getResultSet());
         }else{
             var count = st.getUpdateCount();

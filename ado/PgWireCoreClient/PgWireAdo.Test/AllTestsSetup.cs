@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using PgWireAdo.Test.Utils;
 
-namespace PgWireAdo.Test
+namespace PgWireAdo
 {
     [SetUpFixture]
     public class AllTestsSetup : TestBase
@@ -18,12 +18,14 @@ namespace PgWireAdo.Test
         public void RunBeforeAnyTests()
         {
             TbRunBeforeAnyTests();
+            Trace.Listeners.Add(new ConsoleTraceListener());
         }
 
         [OneTimeTearDown]
         public void RunAfterAnyTests()
         {
             TbRunAfterAnyTests();
+            Trace.Flush();
         }
         
     }
