@@ -1,38 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Formats.Asn1;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using PgWireAdo.utils;
+﻿using PgWireAdo.utils;
 
 namespace PgWireAdo.wire.client
 {
     public class CommandComplete:PgwClientMessage
     {
-        public override bool IsMatching(ReadSeekableStream stream)
-        {
-            try
-            {
-                var to = stream.ReadTimeout;
-                stream.ReadTimeout = 10;
-                var result = ReadData(stream, () =>
-                    stream.ReadByte() == (byte)BackendMessageCode.CommandComplete);
 
-                stream.ReadTimeout = to;
-                return result;
-            }
-            catch (Exception ex)
-            {
-                return false;
-            }
-        }
-
-        public override void Read(ReadSeekableStream stream)
+        public override BackendMessageCode BeType => BackendMessageCode.CommandComplete;
+        public override void Read(DataMessage stream)
         {
             ConsoleOut.WriteLine("CommandComplete");
-            stream.ReadByte();
-            stream.ReadInt32();
             var data = stream.ReadAsciiString();
             try
             {

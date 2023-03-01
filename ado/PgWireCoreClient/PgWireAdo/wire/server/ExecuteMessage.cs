@@ -18,17 +18,16 @@ namespace PgWireAdo.wire.server
             _portal = portal;
             _maxRows = maxRows;
         }
-        public override void Write(ReadSeekableStream stream)
+        public override void Write(PgwByteBuffer stream)
         {
             ConsoleOut.WriteLine("ExecuteMessage " + _portal);
             if (_portal == null) throw new InvalidOperationException("Missing query");
             int length =  4 + _portal.Length+1+4;
-            WriteByte((byte)'E');
-            WriteInt32(length);
-            WriteASCIIString(_portal);
-            WriteByte(0);
-            WriteInt32(_maxRows);
-            Flush(stream);
+            stream.WriteByte((byte)'E');
+            stream.WriteInt32(length);
+            stream.WriteASCIIString(_portal);
+            stream.WriteByte(0);
+            stream.WriteInt32(_maxRows);
         }
     }
 }

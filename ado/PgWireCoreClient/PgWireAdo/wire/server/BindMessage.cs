@@ -28,7 +28,7 @@ public class BindMessage : PgwServerMessage
     }
 
 
-    public override void Write(ReadSeekableStream stream)
+    public override void Write(PgwByteBuffer stream)
     {
         ConsoleOut.WriteLine("BindMessage " + _sourcePsName+" portal: "+ _destinationPortal);
         if (_sourcePsName == null) throw new InvalidOperationException("Missing query");
@@ -55,59 +55,58 @@ public class BindMessage : PgwServerMessage
                      //2 + _parameters.Count * 2 +
                      2 + 2+ parsLengths +
                      2 + _results.Count * 2;
-        WriteByte((byte)'B');
-        WriteInt32(length);
-        WriteASCIIString(_destinationPortal);
-        WriteByte(0);
-        WriteASCIIString(_sourcePsName);
-        WriteByte(0);
-        WriteInt16((short)_parameters.Count);
+        stream.WriteByte((byte)'B');
+        stream.WriteInt32(length);
+        stream.WriteASCIIString(_destinationPortal);
+        stream.WriteByte(0);
+        stream.WriteASCIIString(_sourcePsName);
+        stream.WriteByte(0);
+        stream.WriteInt16((short)_parameters.Count);
 
         foreach (var oid in _parameters)
         {
             if (oid == null || oid.Value == null || oid.Value.GetType() == typeof(string))
             {
-                WriteInt16(0);//Text
+                stream.WriteInt16(0);//Text
             }else
             {
-                WriteInt16(1);
+                stream.WriteInt16(1);
             }
 
         }
-        WriteInt16((short)_parameters.Count);
+        stream.WriteInt16((short)_parameters.Count);
         foreach (var pgwParameter in _parameters)
         {
             if (pgwParameter == null || pgwParameter.Value == null)
             {
-                WriteInt32(0);
+                stream.WriteInt32(0);
             }
             else if(pgwParameter.Value.GetType() == typeof(string))
             {
-                WriteInt32(((String)pgwParameter.Value).Length);
-                WriteASCIIString((String)pgwParameter.Value);
+                stream.WriteInt32(((String)pgwParameter.Value).Length);
+                stream.WriteASCIIString((String)pgwParameter.Value);
             }
             else
             {
                 var bval = PgwConverter.toBytes(pgwParameter.Value);
-                WriteInt32(bval.Length);
-                Write(bval);
+                stream.WriteInt32(bval.Length);
+                stream.Write(bval);
             }
 
         }
-        WriteInt16((short)_results.Count);
+        stream.WriteInt16((short)_results.Count);
         foreach (var oid in _results)
         {
             if (oid == null || oid.Value == null || oid.Value.GetType() == typeof(string))
             {
-                WriteInt16(0);//Text
+                stream.WriteInt16(0);//Text
             }
             else
             {
-                WriteInt16(1);
+                stream.WriteInt16(1);
             }
 
         }
-        Flush(stream);
     }
 
     

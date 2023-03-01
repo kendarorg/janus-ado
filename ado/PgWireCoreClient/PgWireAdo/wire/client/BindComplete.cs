@@ -10,21 +10,13 @@ namespace PgWireAdo.wire.client
 {
     public class BindComplete:PgwClientMessage
     {
-        public override bool IsMatching(ReadSeekableStream stream)
-        {
-            return ReadData(stream, () =>
-                stream.ReadByte() == (byte)BackendMessageCode.BindComplete);
-        }
 
-        public override void Read(ReadSeekableStream stream)
+        public override BackendMessageCode BeType => BackendMessageCode.BindComplete;
+
+        public override void Read(DataMessage stream)
         {
             ConsoleOut.WriteLine("BindComplete");
-            stream.ReadByte();
-            stream.ReadInt32();
         }
-
-        public int Count { get; set; }
-
-        public string Tag { get; set; }
+        
     }
 }

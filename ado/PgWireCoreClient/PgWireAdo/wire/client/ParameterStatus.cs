@@ -10,17 +10,12 @@ namespace PgWireAdo.wire.client
 {
     public class ParameterStatus:PgwClientMessage
     {
-        public override bool IsMatching(ReadSeekableStream stream)
-        {
-            return ReadData(stream, () =>
-                stream.ReadByte() == (byte)BackendMessageCode.ParameterStatus);
-        }
+        public override BackendMessageCode BeType => BackendMessageCode.ParameterStatus;
+        
 
-        public override void Read(ReadSeekableStream stream)
+        public override void Read(DataMessage stream)
         {
             ConsoleOut.WriteLine("ParameterStatus");
-            stream.ReadByte();
-            var length = stream.ReadInt32();
             Key = stream.ReadAsciiString();
             Value = stream.ReadAsciiString();
         }

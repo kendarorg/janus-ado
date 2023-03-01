@@ -10,19 +10,12 @@ namespace PgWireAdo.wire.client
 {
     public class AuthenticationOk:PgwClientMessage
     {
-        public override bool IsMatching(ReadSeekableStream stream)
-        {
-            return ReadData(stream, () =>
-                stream.ReadByte() == (byte)BackendMessageCode.AuthenticationRequest
-                && stream.ReadInt32() == 8
-                && stream.ReadInt32() == 0);
-        }
+        public override BackendMessageCode BeType => BackendMessageCode.AuthenticationRequest;
+       
 
-        public override void Read(ReadSeekableStream stream)
+        public override void Read(DataMessage stream)
         {
             ConsoleOut.WriteLine("AutenthicationOk");
-            stream.ReadByte();
-            stream.ReadInt32();
             stream.ReadInt32();
         }
     }
