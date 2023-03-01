@@ -13,15 +13,14 @@ public class DescribeMessage : PgwServerMessage
         _id = id;
     }
 
-    public override void Write(ReadSeekableStream stream)
+    public override void Write(PgwByteBuffer stream)
     {
         ConsoleOut.WriteLine("DescribeMessage " );
         int length =  4 + 1 + _id.Length + 1;
-        WriteByte((byte)'D');
-        WriteInt32(length); 
-        WriteByte((byte)_type);
-        WriteASCIIString(_id);
-        WriteByte(0);
-        Flush(stream);
+         stream.WriteByte((byte)'D');
+        stream.WriteInt32(length); 
+        stream.WriteByte((byte)_type);
+        stream.WriteASCIIString(_id);
+        stream.WriteByte(0);
     }
 }

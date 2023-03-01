@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ConcurrentLinkedList" Version="1.0.42" />
     <PackageReference Include="Npgsql" Version="7.0.1" />
     <PackageReference Include="UniversalTypeConverter" Version="2.6.0" />
   </ItemGroup>

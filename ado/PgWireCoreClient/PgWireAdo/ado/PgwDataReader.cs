@@ -7,7 +7,7 @@ using PgWireAdo.wire.server;
 
 namespace PgWireAdo.ado;
 
-public class PgwDataReader :DbDataReader
+public class PgwDataReader : DbDataReader
 {
     private readonly DbConnection _dbConnection;
 
@@ -23,7 +23,7 @@ public class PgwDataReader :DbDataReader
     private List<object> _currentRow;
 
     public PgwDataReader(DbConnection dbConnection, string commandText, List<RowDescriptor> fields,
-        CommandBehavior behavior=CommandBehavior.Default)
+        CommandBehavior behavior = CommandBehavior.Default)
     {
         _dbConnection = dbConnection;
         _commandText = commandText;
@@ -37,11 +37,11 @@ public class PgwDataReader :DbDataReader
     {
         get
         {
-            return  PgwConverter.convert(_fields[ordinal], _currentRow[ordinal]);
+            return PgwConverter.convert(_fields[ordinal], _currentRow[ordinal]);
         }
     }
 
-    public override object this[string name] =>this[GetOrdinal(name)];
+    public override object this[string name] => this[GetOrdinal(name)];
 
     public override int RecordsAffected { get; }
     public override bool HasRows
@@ -49,7 +49,7 @@ public class PgwDataReader :DbDataReader
         get { return true; }
     }
     public override bool IsClosed { get; }
-    
+
 
     public override int Depth { get; }
 
@@ -187,74 +187,58 @@ public class PgwDataReader :DbDataReader
     /// </remarks>
     public override bool Read()
     {
-            if (DbConnection.State == ConnectionState.Closed) return false;
-            if ((_behavior & CommandBehavior.SingleRow) != 0)
+        if (DbConnection.State == ConnectionState.Closed) return false;
+        if ((_behavior & CommandBehavior.SingleRow) != 0)
+        {
+            if (_currentRow != null)
             {
-                if (_currentRow != null)
-                {
-                    return false;
-                }
-            }
-            var stream = ((PgwConnection)DbConnection).Stream;
-
-            if (_currentRow == null)
-            {
-                var sync0 = new SyncMessage();
-                sync0.Write(stream);
-            }
-
-
-            var dataRow = new PgwDataRow(_fields);
-            if (dataRow.IsMatching(stream))
-            {
-                dataRow.Read(stream);
-                if (dataRow.Data.Count > 0)
-                {
-                    _currentRow = dataRow.Data;
-                    return true;
-                }
-
-            }
-
-            var commandComplete = new CommandComplete();
-            if (commandComplete.IsMatching(stream))
-            {
-                commandComplete.Read(stream);
-                if ((_behavior & CommandBehavior.CloseConnection) != 0)
-                {
-                    DbConnection.Close();
-                    return false;
-                }
-
-                var sync = new SyncMessage();
-                sync.Write(stream);
-                var readyForQuery = new ReadyForQuery();
-                if (readyForQuery.IsMatching(stream))
-                {
-                    readyForQuery.Read(stream);
-                }
-
                 return false;
             }
+        }
+        var stream = ((PgwConnection)DbConnection).Stream;
 
+        if (_currentRow == null)
+        {
+            stream.Write(new SyncMessage());
+        }
+
+
+        var dataRow = stream.WaitFor<PgwDataRow>();
+        if (dataRow != null)
+        {
+            dataRow.Descriptors = _fields;
+            if (dataRow.Data.Count > 0)
+            {
+                _currentRow = dataRow.Data;
+                return true;
+            }
+        }
+
+        if (stream.WaitFor<CommandComplete>() != null)
+        {
             if ((_behavior & CommandBehavior.CloseConnection) != 0)
             {
                 DbConnection.Close();
                 return false;
             }
-            else
-            {
-                var sync = new SyncMessage();
-                sync.Write(stream);
-                var readyForQuery = new ReadyForQuery();
-                if (readyForQuery.IsMatching(stream))
-                {
-                    readyForQuery.Read(stream);
-                }
+            stream.Write(new SyncMessage());
+            stream.WaitFor<ReadyForQuery>();
+            return false;
+        }
 
-                return false;
-            }
-        
+
+        if ((_behavior & CommandBehavior.CloseConnection) != 0)
+        {
+            DbConnection.Close();
+            return false;
+        }
+        else
+        {
+            stream.Write(new SyncMessage());
+            stream.WaitFor<ReadyForQuery>();
+            return false;
+        }
+
     }
 
     public override Task<bool> ReadAsync(CancellationToken cancellationToken)
@@ -277,25 +261,29 @@ public class PgwDataReader :DbDataReader
 
     public override IEnumerator GetEnumerator()
     {
-        
+
         return new PgwDbEnumerator(this);
     }
 
-    new Task<bool> IsDBNullAsync(int ordinal){
+    new Task<bool> IsDBNullAsync(int ordinal)
+    {
         return Task.FromResult(IsDBNull(ordinal));
     }
 
-    new Task<T> GetFieldValueAsync<T>(int ordinal){
+    new Task<T> GetFieldValueAsync<T>(int ordinal)
+    {
         return Task.FromResult(GetFieldValue<T>(ordinal));
     }
 
-    new T GetFieldValue<T>(int ordinal){
+    new T GetFieldValue<T>(int ordinal)
+    {
         var value = GetValue(ordinal);
-        if(value==null) return default(T);
-        if(value.GetType()==typeof(T)){
+        if (value == null) return default(T);
+        if (value.GetType() == typeof(T))
+        {
             return (T)value;
         }
         throw new NotImplementedException();
     }
-    
+
 }
