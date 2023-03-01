@@ -203,10 +203,12 @@ public class PgwDataReader : DbDataReader
         }
 
 
-        var dataRow = stream.WaitFor<PgwDataRow>();
+        var dataRow = stream.WaitFor<PgwDataRow>((d) =>
+        {
+            d.Descriptors = _fields;
+        });
         if (dataRow != null)
         {
-            dataRow.Descriptors = _fields;
             if (dataRow.Data.Count > 0)
             {
                 _currentRow = dataRow.Data;

@@ -120,11 +120,13 @@ public class PgwCommand : DbCommand,IDisposable
         CallQuery();
         stream.Write(new SyncMessage());
         object result = null;
-        var dataRow = stream.WaitFor<PgwDataRow>();
+        var dataRow = stream.WaitFor<PgwDataRow>((a) =>
+        {
+            a.Descriptors = _fields;
+        });
         var hasData = false;
         if (dataRow != null)
         {
-            dataRow.Descriptors = _fields;
             if (dataRow.Data.Count > 0)
             {
                 var field = _fields[0];
@@ -197,10 +199,14 @@ public class PgwCommand : DbCommand,IDisposable
 
         stream.Write(new ExecuteMessage(_portalId, 0));
 
-        var rowDescription = stream.WaitFor <RowDescription>();
-        if (rowDescription!=null)
+        var commandReceived = stream.WaitFor<CommandComplete,RowDescription>();
+        if (commandReceived is CommandComplete)
         {
-            _fields = rowDescription.Fields;
+            stream.Write(new SyncMessage());
+        }
+        else
+        {
+            _fields = ((RowDescription)commandReceived).Fields;
         }
 
     }

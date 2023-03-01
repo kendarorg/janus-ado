@@ -22,7 +22,7 @@ public class PgwByteBuffer
     //private readonly StreamReader _sr;
     //private readonly StreamWriter _sw;
 
-    public T? WaitFor<T>() where T : PgwClientMessage, new()
+    public T? WaitFor<T>(Action<T> preRead=null) where T : PgwClientMessage, new()
     {
         PgwClientMessage message = new T();
         DataMessage dm = null;
@@ -35,7 +35,83 @@ public class PgwByteBuffer
             var first = _connection.InputQueue.First;
             while (first != null && first.Value != null)
             {
+                if (first.Value.Type == (byte)BackendMessageCode.ErrorResponse)
+                {
+                    dm = first.Value;
+                    node = first;
+                    break;
+                }
                 if (first.Value.Type == (byte)message.BeType)
+                {
+                    dm = first.Value;
+                    node = first;
+                }
+
+                first = first.Next;
+            }
+
+            var after =  DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            if (after > now)
+            {
+                return null;
+            }
+            if (dm == null) Thread.Sleep(10);
+        }
+        if (dm != null)
+        {
+            
+            
+            DataMessage outMsg;
+            _connection.InputQueue.Remove(dm, out outMsg);
+            if (outMsg == null)
+            {
+                return null;
+            }
+            if (outMsg.Type == (byte)BackendMessageCode.ErrorResponse)
+            {
+                message = new ErrorResponse();
+            }
+            else
+            {
+                if (preRead != null)
+                {
+                    preRead.Invoke((T)message);
+                }
+            }
+            Console.WriteLine("[SERVER] Recv:* " + message.GetType().Name);
+            message.Read(outMsg);
+            return (T)message;
+        }
+
+        return null;
+    }
+
+    public PgwClientMessage WaitFor<T,K>() where T : PgwClientMessage, new() where K : PgwClientMessage, new()
+    {
+        PgwClientMessage message = null;
+        PgwClientMessage message1 = new T();
+        PgwClientMessage message2 = new K();
+        DataMessage dm = null;
+        var now = DateTimeOffset.Now.ToUnixTimeMilliseconds() + 1000;
+        Node<DataMessage>? node = null;
+
+        while (dm == null && _connection.Running)
+        {
+
+            var first = _connection.InputQueue.First;
+            while (first != null && first.Value != null)
+            {
+                if (first.Value.Type == (byte)BackendMessageCode.ErrorResponse)
+                {
+                    dm = first.Value;
+                    node = first;
+                    break;
+                }
+                if (first.Value.Type == (byte)message1.BeType)
+                {
+                    dm = first.Value;
+                    node = first;
+                }else if (first.Value.Type == (byte)message2.BeType)
                 {
                     dm = first.Value;
                     node = first;
@@ -53,15 +129,27 @@ public class PgwByteBuffer
         }
         if (dm != null)
         {
-            Console.WriteLine("[SERVER] Recv:* " + dm.Type);
             DataMessage outMsg;
             _connection.InputQueue.Remove(dm, out outMsg);
             if (outMsg == null)
             {
                 return null;
             }
+            if (outMsg.Type == (byte)BackendMessageCode.ErrorResponse)
+            {
+                message = new ErrorResponse();
+            }
+            else if (outMsg.Type == (byte)message2.BeType)
+            {
+                message = message2;
+            }
+            else if (outMsg.Type == (byte)message1.BeType)
+            {
+                message = message1;
+            }
+            Console.WriteLine("[SERVER] Recv:* " + message.GetType().Name);
             message.Read(outMsg);
-            return (T)message;
+            return message;
         }
 
         return null;

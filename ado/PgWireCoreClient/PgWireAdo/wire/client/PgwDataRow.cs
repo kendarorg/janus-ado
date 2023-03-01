@@ -8,7 +8,7 @@ namespace PgWireAdo.wire.client
     public class PgwDataRow:PgwClientMessage
     {
         public override BackendMessageCode BeType => BackendMessageCode.DataRow;
-        private readonly List<RowDescriptor> _descriptors;
+        private List<RowDescriptor> _descriptors;
 
         private List<Object> _data = new();
 
@@ -22,7 +22,7 @@ namespace PgWireAdo.wire.client
         public List<RowDescriptor> Descriptors
         {
             get => _descriptors;
-            set => throw new NotImplementedException();
+            set => _descriptors = value;
         }
 
 

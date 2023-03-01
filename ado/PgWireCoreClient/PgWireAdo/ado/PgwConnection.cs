@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Data.Common;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using ConcurrentLinkedList;
 using PgWireAdo.utils;
@@ -69,10 +70,10 @@ public class PgwConnection : DbConnection
         //_client.NoDelay = true;
 
         _client.Connect(remoteEP);*/
-        var tcpClient = new TcpClient(_options.DataSource, _options.Port);
-        tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+        _tcpClient = new TcpClient(_options.DataSource, _options.Port);
+        _tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
-        _byteBuffer = new PgwByteBuffer(tcpClient, this);
+        _byteBuffer = new PgwByteBuffer(_tcpClient, this);
         
 
         _queueThread = new Thread(() =>
@@ -88,6 +89,7 @@ public class PgwConnection : DbConnection
          parameters.Add("database", Database);
          var startup = new StartupMessage(parameters);
          _byteBuffer.Write(startup);
+         _state = ConnectionState.Open;
     }
 
 
@@ -99,13 +101,19 @@ public class PgwConnection : DbConnection
 
     protected override void Dispose(bool disposing)
     {
+        _running = false;
         if (_state != ConnectionState.Closed)
         {
             _state = ConnectionState.Closed;
-            if (disposing)
-            {
+            if(_client!=null) { 
                 _client.Dispose();
             }
+
+            if (_tcpClient != null)
+            {
+                _tcpClient.Dispose();
+            }
+            
         }
 
         base.Dispose(disposing);
@@ -136,8 +144,19 @@ public class PgwConnection : DbConnection
         _state = ConnectionState.Closed;
         
         _byteBuffer.Write(new TerminateMessage());
-        _client.Dispose();
-        _client = null;
+        _running = false;
+            _state = ConnectionState.Closed;
+            if (_client != null)
+            {
+                _client.Dispose();
+                _client = null;
+            }
+
+            if (_tcpClient != null)
+            {
+                _tcpClient.Dispose();
+                _tcpClient = null;
+            }
 
     }
 
@@ -172,6 +191,7 @@ public class PgwConnection : DbConnection
     #endregion
 
     private bool _running = true;
+    private TcpClient _tcpClient;
 
     public bool Running { get { return _running; } }
     private void ReadDataFromStream(PgwByteBuffer buffer)

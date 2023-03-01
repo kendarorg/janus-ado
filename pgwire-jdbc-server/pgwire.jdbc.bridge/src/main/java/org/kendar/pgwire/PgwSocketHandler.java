@@ -10,6 +10,7 @@ import org.kendar.pgwire.server.ErrorResponse;
 import org.kendar.pgwire.server.ReadyForQuery;
 
 import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -102,6 +103,9 @@ public class PgwSocketHandler implements Runnable, Context {
                 var dm = new DataMessage((char)messageType,messageLength,data);
                 inputQueue.add(dm);
             }
+        }
+        catch (EOFException e) {
+
         }
         catch (IOException e) {
             e.printStackTrace();
