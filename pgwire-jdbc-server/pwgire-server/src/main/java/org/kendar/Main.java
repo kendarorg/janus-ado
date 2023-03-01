@@ -1,10 +1,9 @@
 package org.kendar;
 
-import org.example.PgWireFakeServer;
+import org.kendar.pgwire.PgwJdbcBridge;
 
 import java.io.IOException;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ExecutionException;
 
