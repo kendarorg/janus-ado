@@ -105,7 +105,7 @@ public class PgwSocketHandler implements Runnable, Context {
             }
         }
         catch (EOFException e) {
-
+            e.printStackTrace();
         }
         catch (IOException e) {
             e.printStackTrace();

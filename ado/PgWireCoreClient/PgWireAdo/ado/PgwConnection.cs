@@ -40,36 +40,7 @@ public class PgwConnection : DbConnection
 
     public override void Open()
     {
-        /*IPEndPoint remoteEP = null;
-        IPAddress ipAddress = null;
-        if (_options.DataSource == "localhost")
-        {
-            ipAddress = IPAddress.Loopback;
-            remoteEP = new IPEndPoint(ipAddress, _options.Port);
-        }
-        else
-        {
-            IPHostEntry host = Dns.GetHostEntry(_options.DataSource);
-            
-            if (host == null || host.AddressList.Length == 0)
-            {
-                ipAddress = IPAddress.Parse(_options.DataSource);
-            }
-            else
-            {
-                ipAddress = host.AddressList[0];
-            }
-            
-            remoteEP = new IPEndPoint(ipAddress, _options.Port);
-        }
         
-
-        // Create a TCP/IP  socket.
-        _client = new Socket(ipAddress.AddressFamily,
-            SocketType.Stream, ProtocolType.Tcp);
-        //_client.NoDelay = true;
-
-        _client.Connect(remoteEP);*/
         _tcpClient = new TcpClient(_options.DataSource, _options.Port);
         _tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
@@ -144,19 +115,18 @@ public class PgwConnection : DbConnection
         _state = ConnectionState.Closed;
         
         _byteBuffer.Write(new TerminateMessage());
-        _running = false;
-            _state = ConnectionState.Closed;
-            if (_client != null)
-            {
-                _client.Dispose();
-                _client = null;
-            }
+        _state = ConnectionState.Closed;
+        if (_client != null)
+        {
+            _client.Dispose();
+            _client = null;
+        }
 
-            if (_tcpClient != null)
-            {
-                _tcpClient.Dispose();
-                _tcpClient = null;
-            }
+        if (_tcpClient != null)
+        {
+            _tcpClient.Dispose();
+            _tcpClient = null;
+        }
 
     }
 
@@ -196,27 +166,35 @@ public class PgwConnection : DbConnection
     public bool Running { get { return _running; } }
     private void ReadDataFromStream(PgwByteBuffer buffer)
     {
-        var sslNegotiationDone =false;
-        var header = new byte[5];
-        while (_running)
+        try
         {
-            var messageType = (char)buffer.ReadByte();
-            if (messageType == 'N' && sslNegotiationDone == false)
+            var sslNegotiationDone = false;
+            var header = new byte[5];
+            while (_running)
             {
-                sslNegotiationDone=true;
-                var sslN = new DataMessage((char)messageType, 0, new byte[0]);
-                inputQueue.TryAdd(sslN);
-                continue;
+                var messageType = (char)buffer.ReadByte();
+                if (messageType == 'N' && sslNegotiationDone == false)
+                {
+                    sslNegotiationDone = true;
+                    var sslN = new DataMessage((char)messageType, 0, new byte[0]);
+                    inputQueue.TryAdd(sslN);
+                    continue;
+                }
+
+                var messageLength = buffer.ReadInt32();
+                var data = new byte[0];
+                if (messageLength > 4)
+                {
+                    data = buffer.Read(messageLength - 4);
+                }
+
+                var dm = new DataMessage((char)messageType, messageLength, data);
+                inputQueue.TryAdd(dm);
             }
-            var messageLength = buffer.ReadInt32();
-            var data = new byte[0];
-            if (messageLength > 4)
-            {
-                data = buffer.Read(messageLength - 4);
-            }
-            
-            var dm = new DataMessage((char)messageType, messageLength, data);
-            inputQueue.TryAdd(dm);
+        }
+        catch (Exception ex)
+        {
+
         }
     }
 }
