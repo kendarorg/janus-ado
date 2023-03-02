@@ -220,11 +220,16 @@ public class PgwByteBuffer
     {
         message.Write(this);
         _stream.FlushAsync();
+        ConsoleOut.WriteLine("[SERVER] Sent "+message.GetType().Name);
         //_sw.Flush();
+    }
 
-
-
-
+    public void WriteSync(PgwServerMessage message)
+    {
+        message.Write(this);
+        _stream.Flush();
+        ConsoleOut.WriteLine("[SERVER] Sent " + message.GetType().Name);
+        //_sw.Flush();
     }
 
     public void WriteByte(byte value)

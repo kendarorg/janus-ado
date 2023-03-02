@@ -105,10 +105,10 @@ public class PgwSocketHandler implements Runnable, Context {
             }
         }
         catch (EOFException e) {
-            System.out.println("[SERVER] Closed main:EOFException");
+            this.close();
         }
         catch (IOException e) {
-            System.out.println("[SERVER] Closed main:IOException");
+            this.close();
         }
         finally {
             running.set(false);
@@ -124,7 +124,6 @@ public class PgwSocketHandler implements Runnable, Context {
             catch (IOException e) {
 
             }
-            System.out.println("[SERVER] Closed main");
         }
     }
 
@@ -185,7 +184,6 @@ public class PgwSocketHandler implements Runnable, Context {
                 //ex.printStackTrace();
             }
         }
-        System.out.println("[SERVER] Closed respondToClient");
     }
 
 
@@ -216,9 +214,11 @@ public class PgwSocketHandler implements Runnable, Context {
     public void close() {
         this.running.set(false);
         try {
-            this.connection.close();
+            this.clientSocket.close();
             this.responder.stop();
-        } catch (SQLException e) {
+            this.connection.close();
+
+        } catch (Exception e) {
 
         }
     }

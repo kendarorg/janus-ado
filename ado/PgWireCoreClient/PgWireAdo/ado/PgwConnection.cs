@@ -79,6 +79,11 @@ public class PgwConnection : DbConnection
 
     protected override void Dispose(bool disposing)
     {
+        if (_tcpClient != null && _tcpClient.Connected)
+        {
+            _byteBuffer.WriteSync(new TerminateMessage());
+            Thread.Sleep(50);
+        }
         _running = false;
         if (_state != ConnectionState.Closed)
         {
@@ -121,7 +126,7 @@ public class PgwConnection : DbConnection
     {
         _state = ConnectionState.Closed;
         
-        _byteBuffer.Write(new TerminateMessage());
+        _byteBuffer.WriteSync(new TerminateMessage());
         _state = ConnectionState.Closed;
         if (_client != null)
         {

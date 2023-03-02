@@ -185,13 +185,11 @@ public class PgwDataReader : DbDataReader
             var current = _command.CurrentQuery;
             if (current.Type == SqlStringType.SELECT)
             {
-                ConsoleOut.WriteLine("HERE NEXT SELECT");
                 _command.CallQuery();
                 _fields = _command.Fields;
                 PreLoadData();
             }else if (current.Type == SqlStringType.UPDATE || current.Type == SqlStringType.INSERT)
             {
-                ConsoleOut.WriteLine("HERE NEXT UPDATE");
                 var scalarData = _command.ExecuteScalar();
                 _currentRow = -1;
                 _fields = new List<RowDescriptor>();
@@ -237,7 +235,6 @@ public class PgwDataReader : DbDataReader
                 var qcom = (CommandComplete)clientMessage;
                 if (_command.CurrentQuery.Type == SqlStringType.UPDATE || _command.CurrentQuery.Type == SqlStringType.INSERT)
                 {
-                    ConsoleOut.WriteLine("HERE NEXT UPDATE");
                     _currentRow = -1;
                     _fields = new List<RowDescriptor>();
                     _fields.Add(new RowDescriptor(null, 0, 0, (int)TypesOids.Int4, 0, 0, 0));
@@ -272,8 +269,7 @@ public class PgwDataReader : DbDataReader
             _lastExecuteRequest = 1;
         }
         var stream = ((PgwConnection)DbConnection).Stream;
-
-        Console.WriteLine("THE ROWS ARE "+_currentRow + " " + _rows.Count);
+        
         if (_currentRow < (_rows.Count - 1))
         {
             _currentRow++;

@@ -14,6 +14,7 @@ namespace PgWireAdo.wire.server
         {
             ConsoleOut.WriteLine("[SERVER] Read: TerminateMessage");
             stream.WriteByte((byte)'X');
+            stream.WriteInt32(4);
         }
     }
 }

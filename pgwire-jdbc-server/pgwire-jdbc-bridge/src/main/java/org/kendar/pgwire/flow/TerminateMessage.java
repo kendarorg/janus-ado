@@ -15,7 +15,6 @@ public class TerminateMessage implements PgwFlowMessage{
 
     @Override
     public void handle(Context context) throws IOException {
-
             context.close();
     }
 }

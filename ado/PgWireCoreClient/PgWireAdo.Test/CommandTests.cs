@@ -51,7 +51,6 @@ public class CommandTests : TestBase
         var prepInt = 0;
         foreach (var prepare in new[] { false, true })
         {
-            ConsoleOut.WriteLine("==========================");
             await using var cmd = conn.CreateCommand();
             cmd.CommandText = sql;
             if (prepare && !IsMultiplexing)
@@ -60,10 +59,8 @@ public class CommandTests : TestBase
             var numResultSets = queries.Count(q => q);
             for (var i = 0; i < numResultSets; i++)
             {
-                ConsoleOut.WriteLine("TEST "+ prepInt +" "+ i+" "+ executedQueries[i]);
                 Assert.That(await reader.ReadAsync(), Is.True);
                 Assert.That(reader[0], Is.EqualTo(1));
-                ConsoleOut.WriteLine("TEST " + prepInt + " "+i +" HASNEXT "+(i != numResultSets - 1));
                 Assert.That(await reader.NextResultAsync(), Is.EqualTo(i != numResultSets - 1));
             }
 
