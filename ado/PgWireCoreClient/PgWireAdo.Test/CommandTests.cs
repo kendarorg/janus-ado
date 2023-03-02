@@ -25,13 +25,40 @@ public class CommandTests : TestBase
     #region Legacy batching
 
     [Test]
-    [TestCase(new[] { true }, TestName = "SingleQuery")]
+    //[TestCase(new[] { true }, TestName = "SingleQuery")]
     [TestCase(new[] { false }, TestName = "SingleNonQuery")]
     [TestCase(new[] { true, true }, TestName = "TwoQueries")]
     [TestCase(new[] { false, false }, TestName = "TwoNonQueries")]
     [TestCase(new[] { false, true }, TestName = "NonQueryQuery")]
     [TestCase(new[] { true, false }, TestName = "QueryNonQuery")]
     public async Task Multiple_statements(bool[] queries)
+    {
+        await using var conn = await OpenConnectionAsync();
+        var table = await CreateTempTable(conn, "name TEXT");
+        var sb = new StringBuilder();
+        foreach (var query in queries)
+            sb.Append(query ? "SELECT 1;" : $"UPDATE {table} SET name='yo' WHERE 1=0;");
+        var sql = sb.ToString();
+        foreach (var prepare in new[] { false, true })
+        {
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = sql;
+            if (prepare && !IsMultiplexing)
+                await cmd.PrepareAsync();
+            await using var reader = await cmd.ExecuteReaderAsync();
+            var numResultSets = queries.Count(q => q);
+            for (var i = 0; i < numResultSets; i++)
+            {
+                Assert.That(await reader.ReadAsync(), Is.True);
+                Assert.That(reader[0], Is.EqualTo(1));
+                Assert.That(await reader.NextResultAsync(), Is.EqualTo(i != numResultSets - 1));
+            }
+        }
+    }
+
+    [Test]
+    [TestCase(new[] { true }, TestName = "SingleQuery")]
+    public async Task Multiple_statements2(bool[] queries)
     {
         await using var conn = await OpenConnectionAsync();
         var table = await CreateTempTable(conn, "name TEXT");
