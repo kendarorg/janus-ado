@@ -14,7 +14,7 @@ namespace PgWireAdo.wire.client
             {
                 var spl = data.Split(" ");
                 Tag = spl[0];
-                Count = int.Parse(spl[1]);
+                Count = int.Parse(spl[spl.Length-1]);
             }catch(Exception){}
         }
 

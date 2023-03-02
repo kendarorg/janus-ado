@@ -19,7 +19,6 @@ public class StringParser
 
         select.Add("update", SqlStringType.UPDATE);
         select.Add("insert", SqlStringType.INSERT);
-        select.Add("create", SqlStringType.UPDATE);
         select.Add("delete", SqlStringType.UPDATE);
         select.Add("merge", SqlStringType.UPDATE);
         select.Add("alter", SqlStringType.UPDATE);
@@ -28,11 +27,14 @@ public class StringParser
         select.Add("set", SqlStringType.UPDATE);
         select.Add("truncate", SqlStringType.UPDATE);
         select.Add("janus:", SqlStringType.UPDATE);
-        select.Add("declare", SqlStringType.UPDATE);
 
         select.Add("call", SqlStringType.CALL);
         select.Add("execute", SqlStringType.CALL);
         select.Add("run", SqlStringType.CALL);
+
+
+        select.Add("create", SqlStringType.UNKNOWN);
+        select.Add("declare", SqlStringType.UNKNOWN);
     }
 
     public static bool isUnknown(List<SqlParseResult> data)

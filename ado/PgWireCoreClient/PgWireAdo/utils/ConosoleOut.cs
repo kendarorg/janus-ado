@@ -11,6 +11,7 @@ public class ConsoleOut
     };
     public static void WriteLine(String data)
     {
+        if(data.StartsWith("["))return;
         string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff",
             CultureInfo.InvariantCulture);
         _action.Invoke(timestamp + " "+data);

@@ -53,7 +53,8 @@ public class PgwCommand : DbCommand,IDisposable
         DbTransaction = dbTransaction;
     }
 
-    public override string CommandText { get; set; }
+    
+
     public override int CommandTimeout { get; set; }
     public override CommandType CommandType { get; set; }
     public override UpdateRowSource UpdatedRowSource { get; set; }
@@ -69,6 +70,8 @@ public class PgwCommand : DbCommand,IDisposable
     {
         return new PgwParameter();
     }
+
+
 
     public override int ExecuteNonQuery()
     {
@@ -99,7 +102,7 @@ public class PgwCommand : DbCommand,IDisposable
     protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
     {
         CallQuery();
-        var result = new PgwDataReader(DbConnection, CommandText, _fields,behavior,this._lastExecuteRequest);
+        var result = new PgwDataReader(DbConnection, this, _fields,behavior,this._lastExecuteRequest);
         result.PreLoadData();
         return result;
     }
@@ -110,8 +113,8 @@ public class PgwCommand : DbCommand,IDisposable
     {
         if (DbConnection == null) throw new InvalidOperationException("Missing connection");
         
-        var stream = ((PgwConnection)DbConnection).Stream;
         CallQuery();
+        var stream = ((PgwConnection)DbConnection).Stream;
         stream.Write(new SyncMessage());
         object result = null;
         var dataRow = stream.WaitFor<PgwDataRow>((a) =>
@@ -153,30 +156,61 @@ public class PgwCommand : DbCommand,IDisposable
         return result;
     }
 
-    private void CallQuery()
+    private List<SqlParseResult> _queries;
+    private int _currentQuery = 0;
+    private string _commandText;
+    public override string CommandText
+    {
+        get => _commandText;
+        set
+        {
+            _commandText = value;
+            _queries = SetupQueries(StringParser.getTypes(value),value);
+        }
+    }
+
+    public SqlParseResult CurrentQuery => _queries[_currentQuery];
+
+    public List<RowDescriptor> Fields => _fields;
+
+    private List<SqlParseResult> SetupQueries(List<SqlParseResult> queries,String query)
+    {
+        if(StringParser.isUnknown(queries)){
+            return new 
+            List<SqlParseResult>(){new SqlParseResult(query,SqlStringType.UNKNOWN)};
+
+        }
+        return queries;
+    }
+
+
+    public bool HasNextResult()
+    {
+        return _queries[_currentQuery].Type==SqlStringType.SELECT;
+    }
+    public bool NextResult()
+    {
+        if (_queries.Count > (_currentQuery + 1))
+        {
+            _currentQuery++;
+            return true;
+        }
+        return false;
+    }
+
+    public void CallQuery()
     {
         var stream = ((PgwConnection)DbConnection).Stream;
-        var errorMessage = new ErrorResponse();
-        /*if (DbParameterCollection == null || DbParameterCollection.Count == 0)
-        {
-            if (CommandType == CommandType.TableDirect)
-            {
-                var queryMessage = new QueryMessage("SELECT * FROM "+CommandText+";");
-                queryMessage.Write(stream);
-            }
-            else
-            {
-                var queryMessage = new QueryMessage(CommandText);
-                queryMessage.Write(stream);
-            }
-        }
-        else*/
-
-        var query = CommandText;
         if (CommandType == CommandType.TableDirect)
         {
-            query = "SELECT * FROM " + CommandText;
+            _queries = new List<SqlParseResult>
+            {
+                new ("SELECT * FROM " + CommandText + ";", SqlStringType.SELECT)
+            };
         }
+
+        var query = _queries[_currentQuery].Value;
+        
 
         if (query == null || query.Length == 0)
         {
@@ -206,7 +240,4 @@ public class PgwCommand : DbCommand,IDisposable
     {
         throw new NotImplementedException();
     }
-    
-
-    
 }

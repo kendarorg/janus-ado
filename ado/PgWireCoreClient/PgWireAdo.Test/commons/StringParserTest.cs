@@ -71,6 +71,6 @@ public class StringParserTest
         Assert.AreEqual("\r\nDROP TABLE IF EXISTS temp_table1 CASCADE;", result[0].Value);
         Assert.AreEqual(SqlStringType.UPDATE, result[0].Type);
         Assert.AreEqual("\r\n CREATE TABLE temp_table1 (intf int);", result[1].Value);
-        Assert.AreEqual(SqlStringType.UPDATE, result[1].Type);
+        Assert.AreEqual(SqlStringType.UNKNOWN, result[1].Type);
     }
 }

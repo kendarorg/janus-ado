@@ -19,17 +19,20 @@ public class PgwDataReader : DbDataReader
     public List<RowDescriptor> Fields => _fields;
 
     private readonly string _commandText;
-    private readonly List<RowDescriptor> _fields;
+    private List<RowDescriptor> _fields;
     private CommandBehavior _behavior = CommandBehavior.Default;
     private int _lastExecuteRequest;
     private int _currentRow=-1;
     private List<List<object>> _rows = new ();
+    private readonly PgwCommand _command;
+    private int? _commandCompleteResult;
 
-    public PgwDataReader(DbConnection dbConnection, string commandText, List<RowDescriptor> fields,
+    public PgwDataReader(DbConnection dbConnection, PgwCommand command, List<RowDescriptor> fields,
         CommandBehavior behavior , int lastExecuteRequest)
     {
         _dbConnection = dbConnection;
-        _commandText = commandText;
+        _commandText = command.CommandText;
+        _command = command;
         _fields = fields;
         _behavior = behavior;
         _lastExecuteRequest = lastExecuteRequest;
@@ -175,7 +178,34 @@ public class PgwDataReader : DbDataReader
     /// <returns></returns>
     public override bool NextResult()
     {
-        throw new NotImplementedException();
+        var result = _command.NextResult();
+        var nextIsSelect = _command.HasNextResult();
+        if (result)
+        {
+            var current = _command.CurrentQuery;
+            if (current.Type == SqlStringType.SELECT)
+            {
+                ConsoleOut.WriteLine("HERE NEXT SELECT");
+                _command.CallQuery();
+                _fields = _command.Fields;
+                PreLoadData();
+            }else if (current.Type == SqlStringType.UPDATE || current.Type == SqlStringType.INSERT)
+            {
+                ConsoleOut.WriteLine("HERE NEXT UPDATE");
+                var scalarData = _command.ExecuteScalar();
+                _currentRow = -1;
+                _fields = new List<RowDescriptor>();
+                _fields.Add(new RowDescriptor(null,0,0,0,0,0,0));
+                _rows = new List<List<object>>();
+                var row = new List<Object>();
+                row.Add(scalarData);
+                _rows.Add(row);
+            }
+
+        }
+
+
+        return nextIsSelect && result;
     }
 
     public void PreLoadData()
@@ -204,9 +234,25 @@ public class PgwDataReader : DbDataReader
             }
             else if (clientMessage is CommandComplete)
             {
+                var qcom = (CommandComplete)clientMessage;
+                if (_command.CurrentQuery.Type == SqlStringType.UPDATE || _command.CurrentQuery.Type == SqlStringType.INSERT)
+                {
+                    ConsoleOut.WriteLine("HERE NEXT UPDATE");
+                    _currentRow = -1;
+                    _fields = new List<RowDescriptor>();
+                    _fields.Add(new RowDescriptor(null, 0, 0, (int)TypesOids.Int4, 0, 0, 0));
+                    _rows = new List<List<object>>();
+                    var row = new List<Object>();
+                    row.Add(""+qcom.Count);
+                    _rows.Add(row);
+                }
                 stream.Write(new SyncMessage());
                 stream.WaitFor<ReadyForQuery>();
 
+                break;
+            }
+            else
+            {
                 break;
             }
         }
@@ -226,8 +272,8 @@ public class PgwDataReader : DbDataReader
             _lastExecuteRequest = 1;
         }
         var stream = ((PgwConnection)DbConnection).Stream;
-        
 
+        Console.WriteLine("THE ROWS ARE "+_currentRow + " " + _rows.Count);
         if (_currentRow < (_rows.Count - 1))
         {
             _currentRow++;

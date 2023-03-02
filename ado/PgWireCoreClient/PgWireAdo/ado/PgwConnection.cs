@@ -180,7 +180,7 @@ public class PgwConnection : DbConnection
             long timestamp = 1L;
             var sslNegotiationDone = false;
             var header = new byte[5];
-            while (_running)
+            while (_running && _tcpClient.Connected)
             {
                 var messageType = (char)buffer.ReadByte();
                 if (messageType == 'N' && sslNegotiationDone == false)
@@ -204,7 +204,8 @@ public class PgwConnection : DbConnection
         }
         catch (Exception ex)
         {
-
+            _running = false;
+            _tcpClient.Close();
         }
     }
 }

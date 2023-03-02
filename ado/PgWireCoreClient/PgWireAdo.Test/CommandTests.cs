@@ -25,7 +25,7 @@ public class CommandTests : TestBase
     #region Legacy batching
 
     [Test]
-    //[TestCase(new[] { true }, TestName = "SingleQuery")]
+    [TestCase(new[] { true }, TestName = "SingleQuery")]
     [TestCase(new[] { false }, TestName = "SingleNonQuery")]
     [TestCase(new[] { true, true }, TestName = "TwoQueries")]
     [TestCase(new[] { false, false }, TestName = "TwoNonQueries")]
@@ -35,39 +35,23 @@ public class CommandTests : TestBase
     {
         await using var conn = await OpenConnectionAsync();
         var table = await CreateTempTable(conn, "name TEXT");
+        var executedQueries = new List<string>();
         var sb = new StringBuilder();
         foreach (var query in queries)
-            sb.Append(query ? "SELECT 1;" : $"UPDATE {table} SET name='yo' WHERE 1=0;");
-        var sql = sb.ToString();
-        foreach (var prepare in new[] { false, true })
         {
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = sql;
-            if (prepare && !IsMultiplexing)
-                await cmd.PrepareAsync();
-            await using var reader = await cmd.ExecuteReaderAsync();
-            var numResultSets = queries.Count(q => q);
-            for (var i = 0; i < numResultSets; i++)
-            {
-                Assert.That(await reader.ReadAsync(), Is.True);
-                Assert.That(reader[0], Is.EqualTo(1));
-                Assert.That(await reader.NextResultAsync(), Is.EqualTo(i != numResultSets - 1));
-            }
+            sb.Append(query ? "SELECT 1;" : $"UPDATE {table} SET name='yo' ;");
+            executedQueries.Add(query ? "SELECT 1;" : $"UPDATE {table} SET name='yo' ;");
         }
-    }
 
-    [Test]
-    [TestCase(new[] { true }, TestName = "SingleQuery")]
-    public async Task Multiple_statements2(bool[] queries)
-    {
-        await using var conn = await OpenConnectionAsync();
-        var table = await CreateTempTable(conn, "name TEXT");
-        var sb = new StringBuilder();
-        foreach (var query in queries)
-            sb.Append(query ? "SELECT 1;" : $"UPDATE {table} SET name='yo' WHERE 1=0;");
+        var ins = conn.CreateCommand();
+        ins.CommandText = $"INSERT INTO {table} VALUES('ma')";
+        ins.ExecuteNonQuery();
+
         var sql = sb.ToString();
+        var prepInt = 0;
         foreach (var prepare in new[] { false, true })
         {
+            ConsoleOut.WriteLine("==========================");
             await using var cmd = conn.CreateCommand();
             cmd.CommandText = sql;
             if (prepare && !IsMultiplexing)
@@ -76,12 +60,17 @@ public class CommandTests : TestBase
             var numResultSets = queries.Count(q => q);
             for (var i = 0; i < numResultSets; i++)
             {
+                ConsoleOut.WriteLine("TEST "+ prepInt +" "+ i+" "+ executedQueries[i]);
                 Assert.That(await reader.ReadAsync(), Is.True);
                 Assert.That(reader[0], Is.EqualTo(1));
+                ConsoleOut.WriteLine("TEST " + prepInt + " "+i +" HASNEXT "+(i != numResultSets - 1));
                 Assert.That(await reader.NextResultAsync(), Is.EqualTo(i != numResultSets - 1));
             }
+
+            prepInt++;
         }
     }
+    
 
     [Test]
     public async Task Multiple_statements_with_parameters([Values(PrepareOrNot.NotPrepared, PrepareOrNot.Prepared)] PrepareOrNot prepare)

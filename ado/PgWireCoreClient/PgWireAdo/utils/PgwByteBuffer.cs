@@ -25,6 +25,7 @@ public class PgwByteBuffer
 
     public T? WaitFor<T>(Action<T>? preRead=null,long timeout =1000L) where T : PgwClientMessage, new()
     {
+
         PgwClientMessage? message = null;
         PgwClientMessage message1 =  new T();
         if (typeof(T) == typeof(ParseComplete))
@@ -100,7 +101,7 @@ public class PgwByteBuffer
         var now = DateTimeOffset.Now.ToUnixTimeMilliseconds() + 1000L;
 
 
-        while (dm == null && _connection.Running)
+        while (dm == null && _connection.Running && _client.Connected)
         {
 
             foreach (var dataMessage in _connection.InputQueue.ToArray())
@@ -129,6 +130,11 @@ public class PgwByteBuffer
                 return null;
             }
             if (dm == null) Task.Delay(1).Wait();
+        }
+
+        if (!_client.Connected)
+        {
+            throw new Exception("DISCONNECTED");
         }
         if (dm != null)
         {
@@ -170,7 +176,7 @@ public class PgwByteBuffer
         //client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
         _connection = connection;
         _stream = client.GetStream(); //new BufferedStream(client.GetStream(),2000000);
-
+        _client  = client;
         //_sr = new StreamReader(_stream);
         // _sw = new BinaryWriter(_stream);
     }
