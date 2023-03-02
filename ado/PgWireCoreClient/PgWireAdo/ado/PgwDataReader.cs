@@ -178,11 +178,6 @@ public class PgwDataReader : DbDataReader
         throw new NotImplementedException();
     }
 
-    public Task<bool> ReadAsync()
-    {
-        return Task.FromResult(Read());
-    }
-
     public void PreLoadData()
     {
 
@@ -246,10 +241,7 @@ public class PgwDataReader : DbDataReader
 
     }
 
-    public override Task<bool> ReadAsync(CancellationToken cancellationToken)
-    {
-        return Task.Run(Read, cancellationToken);
-    }
+    
 
 
 
@@ -270,15 +262,9 @@ public class PgwDataReader : DbDataReader
         return new PgwDbEnumerator(this);
     }
 
-    new Task<bool> IsDBNullAsync(int ordinal)
-    {
-        return Task.FromResult(IsDBNull(ordinal));
-    }
+    
 
-    new Task<T> GetFieldValueAsync<T>(int ordinal)
-    {
-        return Task.FromResult(GetFieldValue<T>(ordinal));
-    }
+    
 
     new T GetFieldValue<T>(int ordinal)
     {

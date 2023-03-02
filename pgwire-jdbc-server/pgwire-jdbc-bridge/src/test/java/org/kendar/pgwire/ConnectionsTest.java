@@ -7,8 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.sql.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ConnectionsTest {
     private static Thread mainThread;
@@ -237,5 +236,43 @@ public class ConnectionsTest {
 
 
 
+    }
+
+
+    @Test
+    void testNextResult() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+
+        String url = POSTGRES_FAKE_CONNECTION_STRING;
+        try(Connection conn = DriverManager.getConnection(url)) {
+            var st =  conn.createStatement();
+            var result =st.executeQuery("SELECT 1;");
+            assertTrue(result.next());
+            assertEquals(1, result.getInt(1));
+            assertFalse(st.getMoreResults());
+        }
+    }
+
+    @Test
+    void testNextResult2() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+
+        String url = POSTGRES_FAKE_CONNECTION_STRING;
+        try(Connection conn = DriverManager.getConnection(url)) {
+            var pstmt =  conn.prepareStatement("SELECT 1;SELECT 't'");
+            boolean result = pstmt.execute();
+            while(true) {
+                if (result) {
+                    ResultSet rs = pstmt.getResultSet();
+                    // Do something with resultset ...
+                } else {
+                    int updateCount = pstmt.getUpdateCount();
+                    if (updateCount == -1) {
+                        // no more results
+                        break;
+                    }
+                    // Do something with update count ...
+                }
+                result = pstmt.getMoreResults();
+            }
+        }
     }
 }

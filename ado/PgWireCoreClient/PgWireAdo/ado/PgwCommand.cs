@@ -88,15 +88,8 @@ public class PgwCommand : DbCommand,IDisposable
         return result;
     }
 
-    public override Task<int> ExecuteNonQueryAsync(CancellationToken cancellationToken)
-    {
-        return Task.FromResult(ExecuteNonQuery());
-    }
-
-    public override async Task<object?> ExecuteScalarAsync(CancellationToken cancellationToken)
-    {
-        return await Task.FromResult(ExecuteScalar());
-    }
+    
+    
 
     public override void Prepare()
     {
@@ -213,16 +206,7 @@ public class PgwCommand : DbCommand,IDisposable
     {
         throw new NotImplementedException();
     }
-
-    public new Task<DbDataReader> ExecuteReaderAsync()
-    {
-        return ExecuteReaderAsync(CommandBehavior.Default);
-    }
-
-    public new Task<DbDataReader> ExecuteReaderAsync(CommandBehavior commandBehavior)
-    {
-        return Task.Run(() => ExecuteDbDataReader(commandBehavior));
-    }
+    
 
     
 }
