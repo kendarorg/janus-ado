@@ -79,7 +79,7 @@ public class PgwCommand : DbCommand,IDisposable
         while (commandComplete!=null)
         {
             result += commandComplete.Count;
-            commandComplete = stream.WaitFor<CommandComplete>(timeout:100L);
+            commandComplete = stream.WaitFor<CommandComplete>(timeout:10L);
         }
         stream.Write(new SyncMessage());
         var readyForQuery = stream.WaitFor<ReadyForQuery>();

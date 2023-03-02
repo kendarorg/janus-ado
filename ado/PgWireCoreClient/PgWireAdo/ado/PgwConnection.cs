@@ -62,7 +62,6 @@ public class PgwConnection : DbConnection
         Task.Delay(10).Wait();
         _byteBuffer.Write(new SSLNegotation());
         var response = _byteBuffer.WaitFor<SSLResponse>();
-        ConsoleOut.WriteLine("Response "+(response!=null));
         
          var parameters = new Dictionary<String, String>();
          parameters.Add("database", Database);
@@ -190,11 +189,6 @@ public class PgwConnection : DbConnection
                     var sslN = new DataMessage((char)messageType, 0, new byte[0], timestamp++);
                     inputQueue.AddOrUpdate(sslN.Id,sslN,(g,d)=> sslN);
                     continue;
-                }
-
-                if (messageType == 'K')
-                {
-                    ConsoleOut.WriteLine("R");
                 }
 
                 var messageLength = buffer.ReadInt32();

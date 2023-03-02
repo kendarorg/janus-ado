@@ -55,7 +55,7 @@ namespace PgWireAdo.wire.server
             while (parameterStatus != null)
             {
                 _serverParameters.Add(parameterStatus.Key, parameterStatus.Value);
-                parameterStatus = stream.WaitFor<ParameterStatus>(timeout:100L);
+                parameterStatus = stream.WaitFor<ParameterStatus>(timeout:10L);
             }
 
             var readyForQuery = stream.WaitFor<ReadyForQuery>();
