@@ -4,6 +4,7 @@ import org.kendar.pgwire.commons.Context;
 import org.kendar.pgwire.commons.DataMessage;
 import org.kendar.pgwire.server.ParseCompleted;
 import org.kendar.pgwire.server.ReadyForQuery;
+import org.kendar.pgwire.utils.ConsoleOut;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,7 +48,7 @@ public class ParseMessage implements PgwFlowMessage{
     public void read(DataMessage message) throws IOException {
         statementName = message.readString();
         query = message.readString();
-        System.out.println("[SERVER] ExtQuery: "+query);
+        ConsoleOut.println("[SERVER] ExtQuery: "+query);
         var paramsCount = message.getShort();
         oids = new ArrayList<Integer>();
         for(var i=0;i<paramsCount;i++){

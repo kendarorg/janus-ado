@@ -3,6 +3,7 @@ package org.kendar.pgwire.flow;
 import org.kendar.pgwire.commons.Context;
 import org.kendar.pgwire.commons.DataMessage;
 import org.kendar.pgwire.executors.SimpleExecutor;
+import org.kendar.pgwire.utils.ConsoleOut;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -13,7 +14,7 @@ public class QueryMessage implements PgwFlowMessage{
     @Override
     public void read(DataMessage message) throws IOException {
         query = message.readString();
-        System.out.println("[SERVER] Query: "+query);
+        ConsoleOut.println("[SERVER] Query: "+query);
     }
 
     @Override

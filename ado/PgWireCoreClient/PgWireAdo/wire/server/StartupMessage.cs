@@ -23,7 +23,7 @@ namespace PgWireAdo.wire.server
 
         public override void Write(PgwByteBuffer stream)
         {
-            ConsoleOut.WriteLine("[SERVER] Read: StartupMessage");
+            ConsoleOut.WriteLine("[SERVER] Write: StartupMessage");
             var data = new List<byte[]>();
             int length = 4 + 4;
             foreach (var parameter in _parameters)

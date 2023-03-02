@@ -22,7 +22,7 @@ public class ParseMessage : PgwServerMessage
 
     public override void Write(PgwByteBuffer stream)
     {
-        ConsoleOut.WriteLine("[SERVER] Read: ParseMessage " + _query);
+        ConsoleOut.WriteLine("[SERVER] Write: ParseMessage " + _query);
         if (_query == null) throw new InvalidOperationException("Missing query");
         int length =  4 + _query.Length + 1 + _preparedStatementName.Length + 1+2+ _oids.Count*4;
         stream.WriteByte((byte)'P');

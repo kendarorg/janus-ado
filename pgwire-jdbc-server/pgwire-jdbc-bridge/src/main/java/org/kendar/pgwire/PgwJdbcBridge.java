@@ -1,5 +1,7 @@
 package org.kendar.pgwire;
 
+import org.kendar.pgwire.utils.ConsoleOut;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -27,7 +29,7 @@ public class PgwJdbcBridge {
 
                 // Displaying that new client is connected
                 // to server
-                System.out.println("[SERVER] Connect: "
+                ConsoleOut.println("[SERVER] Connect: "
                         + client.getInetAddress()
                         .getHostAddress());
 

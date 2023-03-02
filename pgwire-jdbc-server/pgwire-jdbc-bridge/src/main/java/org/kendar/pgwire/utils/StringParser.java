@@ -12,7 +12,7 @@ public class StringParser {
         String input = "Hello, 'world!'";
         String[] tokens = parseString(input);
         for (String token : tokens) {
-            System.out.println(token);
+            ConsoleOut.println(token);
         }
     }*/
     static Map<String, SqlStringType> select;

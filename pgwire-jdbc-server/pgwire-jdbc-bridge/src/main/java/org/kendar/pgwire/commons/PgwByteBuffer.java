@@ -2,6 +2,7 @@ package org.kendar.pgwire.commons;
 
 import org.kendar.pgwire.initialize.PgwClientMessage;
 import org.kendar.pgwire.server.PgwServerMessage;
+import org.kendar.pgwire.utils.ConsoleOut;
 
 import java.io.*;
 import java.net.Socket;
@@ -48,13 +49,13 @@ public class PgwByteBuffer {
     }
 
     public void read(PgwClientMessage pgwClientMessage) throws IOException {
-        System.out.println("[SERVER] BEG Recv: "+pgwClientMessage.getClass().getSimpleName());
+        ConsoleOut.println("[SERVER] BEG Recv: "+pgwClientMessage.getClass().getSimpleName());
         pgwClientMessage.read(this);
-        System.out.println("[SERVER] END Recv: "+pgwClientMessage.getClass().getSimpleName());
+        ConsoleOut.println("[SERVER] END Recv: "+pgwClientMessage.getClass().getSimpleName());
     }
 
     public PgwByteBuffer write(PgwServerMessage pgwServerMessage) throws IOException {
-        System.out.println("[SERVER] Sent: "+pgwServerMessage.getClass().getSimpleName());
+        ConsoleOut.println("[SERVER] Sent: "+pgwServerMessage.getClass().getSimpleName());
         pgwServerMessage.write(this);
         outputStream.flush();
         return this;

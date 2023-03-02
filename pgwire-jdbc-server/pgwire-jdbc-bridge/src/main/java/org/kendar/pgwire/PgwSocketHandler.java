@@ -8,6 +8,7 @@ import org.kendar.pgwire.initialize.SSLNegotation;
 import org.kendar.pgwire.initialize.StartupMessage;
 import org.kendar.pgwire.server.ErrorResponse;
 import org.kendar.pgwire.server.ReadyForQuery;
+import org.kendar.pgwire.utils.ConsoleOut;
 
 import java.io.BufferedReader;
 import java.io.EOFException;
@@ -97,7 +98,7 @@ public class PgwSocketHandler implements Runnable, Context {
             while(running.get()){
 
                 var messageType = buffer.readByte();
-                //System.out.println("R "+(char)messageType);
+                //ConsoleOut.println("R "+(char)messageType);
                 var messageLength = buffer.readInt32();
                 var data = buffer.read(messageLength-4);
                 var dm = new DataMessage((char)messageType,messageLength,data);
@@ -169,13 +170,14 @@ public class PgwSocketHandler implements Runnable, Context {
                         message = new QueryMessage();
                         break;
                 }
-                System.out.println("[SERVER] Recv: "+message.getClass().getSimpleName());
+                ConsoleOut.println("[SERVER] Recv: "+message.getClass().getSimpleName());
                 message.read(item);
                 message.handle(this);
             }catch (Exception ex){
                 try {
                     setTransaction(false);
-                    System.out.println("[ERROR] On message "+lastFoundedType+" "+ex.getMessage());
+                    ex.printStackTrace();
+                    ConsoleOut.println("[ERROR] On message "+lastFoundedType+" "+ex.getMessage());
                     this.getBuffer().write(new ErrorResponse(ex.getMessage()));
                     this.getBuffer().write(new ReadyForQuery(inTransaction()));
                 } catch (IOException e) {
@@ -204,7 +206,7 @@ public class PgwSocketHandler implements Runnable, Context {
             if(dm==null)sleep(10);
         }
         if(dm!=null){
-            System.out.println("[SERVER] Recv:* "+dm.getType());
+            ConsoleOut.println("[SERVER] Recv:* "+dm.getType());
             inputQueue.remove(dm);
         }
         return dm;

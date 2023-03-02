@@ -53,8 +53,8 @@ public class PgwParameterCollection: DbParameterCollection
 
     public override void RemoveAt(int index)
     {
-        if (_data.Count >= index) return;
         _data.RemoveAt(index);
+
     }
 
     public override void RemoveAt(string parameterName)

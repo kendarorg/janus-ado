@@ -393,7 +393,7 @@ public class CommandTests : TestBase
         await using var conn = await OpenConnectionAsync();
         await using var cmd = conn.CreateCommand();
 
-        cmd.CommandText = "SELECT @p1";
+        cmd.CommandText = "SELECT ?";
         cmd.Parameters.AddWithValue("@p1", 8);
         _ = await cmd.ExecuteScalarAsync();
 
@@ -443,8 +443,8 @@ public class CommandTests : TestBase
     public async Task Same_param_multiple_times()
     {
         using var conn = await OpenConnectionAsync();
-        using var cmd = new NpgsqlCommand("SELECT @p1, @p1", conn);
-        cmd.Parameters.AddWithValue("@p1", 8);
+        using var cmd = new NpgsqlCommand("SELECT :nam, :nam", conn);
+        cmd.Parameters.AddWithValue("@nam", "8");
         using var reader = await cmd.ExecuteReaderAsync();
         reader.Read();
         Assert.That(reader[0], Is.EqualTo(8));
@@ -455,7 +455,7 @@ public class CommandTests : TestBase
     public async Task Generic_parameter()
     {
         using var conn = await OpenConnectionAsync();
-        using var cmd = new NpgsqlCommand("SELECT @p1, @p2, @p3, @p4", conn);
+        using var cmd = new NpgsqlCommand("SELECT ?, ?, ?, ?", conn);
         cmd.Parameters.Add(new NpgsqlParameter<int>("p1", 8));
         cmd.Parameters.Add(new NpgsqlParameter<short>("p2", 8) { DbType = NpgsqlDbType.Int32 });
         cmd.Parameters.Add(new NpgsqlParameter<string>("p3", "hello"));
@@ -540,8 +540,7 @@ public class CommandTests : TestBase
         var cmd = new NpgsqlCommand("SELECT 1, 2", conn);
         await cmd.ExecuteReaderAsync();
         cmd.Dispose();
-        cmd = new NpgsqlCommand("SELECT 3", conn);
-        Assert.That(() => cmd.ExecuteScalarAsync(), Throws.Exception.TypeOf<PgwException>());
+        Assert.That(() => cmd.ExecuteScalarAsync(), Throws.Exception.TypeOf<InvalidOperationException>());
     }
 
 
@@ -914,25 +913,25 @@ public class CommandTests : TestBase
     public async Task Same_command_different_param_values()
     {
         using var conn = await OpenConnectionAsync();
-        using var cmd = new NpgsqlCommand("SELECT @p", conn);
-        cmd.Parameters.AddWithValue("p", 8);
+        using var cmd = new NpgsqlCommand("SELECT ?", conn);
+        cmd.Parameters.AddWithValue("p", "8");
         await cmd.ExecuteNonQueryAsync();
 
-        cmd.Parameters[0].Value = 9;
-        Assert.That(await cmd.ExecuteScalarAsync(), Is.EqualTo(9));
+        cmd.Parameters[0].Value = "9";
+        Assert.That(await cmd.ExecuteScalarAsync(), Is.EqualTo("9"));
     }
 
     [Test, IssueLink("https://github.com/npgsql/npgsql/issues/1429")]
     public async Task Same_command_different_param_instances()
     {
         using var conn = await OpenConnectionAsync();
-        using var cmd = new NpgsqlCommand("SELECT @p", conn);
-        cmd.Parameters.AddWithValue("p", 8);
+        using var cmd = new NpgsqlCommand("SELECT ?", conn);
+        cmd.Parameters.AddWithValue("p", "8");
         await cmd.ExecuteNonQueryAsync();
 
         cmd.Parameters.RemoveAt(0);
-        cmd.Parameters.AddWithValue("p", 9);
-        Assert.That(await cmd.ExecuteScalarAsync(), Is.EqualTo(9));
+        cmd.Parameters.AddWithValue("p", "9");
+        Assert.That(await cmd.ExecuteScalarAsync(), Is.EqualTo("9"));
     }
 
     [Test, IssueLink("https://github.com/npgsql/npgsql/issues/4134")]

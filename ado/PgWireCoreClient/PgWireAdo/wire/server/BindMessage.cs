@@ -1,8 +1,11 @@
-﻿using System.Buffers.Binary;
+﻿using System;
+using System.Buffers.Binary;
 using System.Data;
 using System.Data.Common;
+using System.Security.Cryptography;
 using PgWireAdo.ado;
 using PgWireAdo.utils;
+using TB.ComponentModel;
 
 namespace PgWireAdo.wire.server;
 
@@ -30,7 +33,7 @@ public class BindMessage : PgwServerMessage
 
     public override void Write(PgwByteBuffer stream)
     {
-        ConsoleOut.WriteLine("[SERVER] Read: BindMessage " + _sourcePsName+" portal: "+ _destinationPortal);
+        ConsoleOut.WriteLine("[SERVER] Write: BindMessage " + _sourcePsName+" portal: "+ _destinationPortal);
         if (_sourcePsName == null) throw new InvalidOperationException("Missing query");
 
         var parsLengths = 0;
@@ -42,11 +45,16 @@ public class BindMessage : PgwServerMessage
             }
             else if (pgwParameter.Value.GetType() == typeof(string))
             {
-                parsLengths += 2+4+ ((String)pgwParameter.Value).Length;
+                parsLengths += 2 + 4 + ((String)pgwParameter.Value).Length;
+            }
+            else if (pgwParameter.Value.GetType() == typeof(byte[]))
+            {
+                parsLengths += 2 + 4 + ((byte[])pgwParameter.Value).Length;
             }
             else
             {
-                parsLengths += 2+4 + PgwConverter.toBytes(pgwParameter.Value).Length;
+                var sval = pgwParameter.Value.To<String>();
+                parsLengths += 2+4 + sval.Length;
             }
 
         }
@@ -65,12 +73,21 @@ public class BindMessage : PgwServerMessage
 
         foreach (var oid in _parameters)
         {
-            if (oid == null || oid.Value == null || oid.Value.GetType() == typeof(string))
+            if (oid == null || oid.Value == null)
             {
                 stream.WriteInt16(0);//Text
-            }else
+            }
+            else if (oid.Value.GetType() == typeof(String))
+            {
+                stream.WriteInt16(0);
+            }
+            else if (oid.Value.GetType()== typeof(byte[]))
             {
                 stream.WriteInt16(1);
+            }
+            else
+            {
+                stream.WriteInt16(0);
             }
 
         }
@@ -81,6 +98,12 @@ public class BindMessage : PgwServerMessage
             {
                 stream.WriteInt32(0);
             }
+            else if (pgwParameter.Value.GetType() == typeof(byte[]))
+            {
+                var bval = (byte[])pgwParameter.Value;
+                stream.WriteInt32(bval.Length);
+                stream.Write(bval);
+            }
             else if(pgwParameter.Value.GetType() == typeof(string))
             {
                 stream.WriteInt32(((String)pgwParameter.Value).Length);
@@ -88,13 +111,13 @@ public class BindMessage : PgwServerMessage
             }
             else
             {
-                var bval = PgwConverter.toBytes(pgwParameter.Value);
-                stream.WriteInt32(bval.Length);
-                stream.Write(bval);
+                var sval = pgwParameter.Value.To<String>();
+                stream.WriteInt32(sval.Length);
+                stream.WriteASCIIString(sval);
             }
 
         }
-        stream.WriteInt16((short)_results.Count);
+        /*stream.WriteInt16((short)_results.Count);
         foreach (var oid in _results)
         {
             if (oid == null || oid.Value == null || oid.Value.GetType() == typeof(string))
@@ -106,7 +129,7 @@ public class BindMessage : PgwServerMessage
                 stream.WriteInt16(1);
             }
 
-        }
+        }*/
     }
 
     

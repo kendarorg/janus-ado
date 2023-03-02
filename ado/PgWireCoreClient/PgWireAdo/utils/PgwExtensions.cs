@@ -12,6 +12,10 @@ public static class PgwExtesnions{
             Value = value,
             ParameterName = name
         };
+        if (value != null)
+        {
+            dbp.DbType= PgwConverter.ConvertToDbType(value);;
+        }
         coll.Add(dbp);
     }
 
@@ -21,6 +25,10 @@ public static class PgwExtesnions{
         {
             Value = value
         };
+        if (value != null)
+        {
+            dbp.DbType = PgwConverter.ConvertToDbType(value); ;
+        }
         coll.Add(dbp);
     }
 

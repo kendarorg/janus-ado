@@ -12,7 +12,7 @@ namespace PgWireAdo.wire.server
     {
         public override void Write(PgwByteBuffer stream)
         {
-            ConsoleOut.WriteLine("[SERVER] Read: TerminateMessage");
+            ConsoleOut.WriteLine("[SERVER] Write: TerminateMessage");
             stream.WriteByte((byte)'X');
             stream.WriteInt32(4);
         }

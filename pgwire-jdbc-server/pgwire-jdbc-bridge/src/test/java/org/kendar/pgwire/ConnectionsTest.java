@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ConnectionsTest {
     private static Thread mainThread;
 
-    public static final String POSTGRES_FAKE_CONNECTION_STRING = "jdbc:postgresql://localhost/test?" +
+    public static final String POSTGRES_FAKE_CONNECTION_STRING = "jdbc:postgresql://localhost:5959/test?" +
             "user=fred&" +
             "password=secret&" +
             "ssl=false";
@@ -24,12 +24,13 @@ public class ConnectionsTest {
 
     @BeforeAll
     static void beforeAll(){
-        var postgresPort = 5432;
+        var postgresPort = 5959;
         var maxTimeout = 120000;
         mainThread = new Thread(()->PgwJdbcBridge.start(()->{
             try {
                 var conn = DriverManager.
                         getConnection("jdbc:h2:mem:test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH", "sa","sa");
+                        //getConnection("jdbc:postgresql://localhost:5432/","postgres","postgres");
                 Statement stat = conn.createStatement();
                 stat.execute("CREATE ALIAS IF NOT EXISTS pg_sleep FOR 'java.lang.Thread.sleep(long)'");
                 return conn;

@@ -66,7 +66,7 @@ public class DataMessage {
 
     public byte[] readBytes(int parameterLength) {
         var result = new byte[parameterLength];
-        for(var i=0;i<parameterLength;i++,cursor++){
+        for(var i=0;i<parameterLength && cursor<data.length;i++,cursor++){
             result[i]=data[cursor];
         }
         return result;
