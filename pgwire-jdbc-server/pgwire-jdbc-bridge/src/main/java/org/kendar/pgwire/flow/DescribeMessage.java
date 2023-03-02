@@ -51,6 +51,7 @@ public class DescribeMessage  implements PgwFlowMessage{
         executor.handle(context,portal);
 
         if(context.get("result_" + portal)!=null && context.get("result_" + portal).getClass()==String.class){
+            context.getBuffer().write(new RowDescription(new ArrayList<>()));
             return;
         }
         try {

@@ -32,10 +32,10 @@ public class PgwConnection : DbConnection
         
     }
 
-    private ConcurrentBag<DataMessage> inputQueue = new();
+    private ConcurrentDictionary<Guid,DataMessage> inputQueue = new();
     private Thread _queueThread;
 
-    public ConcurrentBag<DataMessage> InputQueue { get { return inputQueue; } }
+    public ConcurrentDictionary<Guid,DataMessage> InputQueue { get { return inputQueue; } }
 
 
 
@@ -43,13 +43,13 @@ public class PgwConnection : DbConnection
     {
         
         _tcpClient = new TcpClient(_options.DataSource, _options.Port);
-        _tcpClient.ReceiveTimeout = 2000;
+        /*_tcpClient.ReceiveTimeout = 2000;
         _tcpClient.SendTimeout = 2000;
         _tcpClient.ReceiveBufferSize = 2000000;
         _tcpClient.SendBufferSize = 2000000;
         //_tcpClient.NoDelay=true;
-        _tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-
+        //_tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+        */
         _byteBuffer = new PgwByteBuffer(_tcpClient, this);
         
 
@@ -59,7 +59,7 @@ public class PgwConnection : DbConnection
             ReadDataFromStream(_byteBuffer);
         });
         _queueThread.Start();
-        Thread.Sleep(500);
+        Task.Delay(10).Wait();
         _byteBuffer.Write(new SSLNegotation());
         var response = _byteBuffer.WaitFor<SSLResponse>();
         ConsoleOut.WriteLine("Response "+(response!=null));
@@ -178,6 +178,7 @@ public class PgwConnection : DbConnection
     {
         try
         {
+            long timestamp = 1L;
             var sslNegotiationDone = false;
             var header = new byte[5];
             while (_running)
@@ -186,9 +187,14 @@ public class PgwConnection : DbConnection
                 if (messageType == 'N' && sslNegotiationDone == false)
                 {
                     sslNegotiationDone = true;
-                    var sslN = new DataMessage((char)messageType, 0, new byte[0]);
-                    inputQueue.Add(sslN);
+                    var sslN = new DataMessage((char)messageType, 0, new byte[0], timestamp++);
+                    inputQueue.AddOrUpdate(sslN.Id,sslN,(g,d)=> sslN);
                     continue;
+                }
+
+                if (messageType == 'K')
+                {
+                    ConsoleOut.WriteLine("R");
                 }
 
                 var messageLength = buffer.ReadInt32();
@@ -198,8 +204,8 @@ public class PgwConnection : DbConnection
                     data = buffer.Read(messageLength - 4);
                 }
 
-                var dm = new DataMessage((char)messageType, messageLength, data);
-                inputQueue.Add(dm);
+                var dm = new DataMessage((char)messageType, messageLength, data, timestamp++);
+                inputQueue.AddOrUpdate(dm.Id, dm, (g, d) => dm);
             }
         }
         catch (Exception ex)

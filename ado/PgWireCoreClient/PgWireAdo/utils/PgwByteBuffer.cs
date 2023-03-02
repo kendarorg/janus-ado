@@ -15,7 +15,7 @@ public class PgwByteBuffer
 {
     //private readonly Socket _client;
     private readonly PgwConnection _connection;
-    private readonly BufferedStream _stream;
+    private readonly Stream _stream;
 
     //private readonly BinaryWriter _sw;
 
@@ -25,7 +25,12 @@ public class PgwByteBuffer
 
     public T? WaitFor<T>(Action<T> preRead=null) where T : PgwClientMessage, new()
     {
-        PgwClientMessage message = new T();
+        PgwClientMessage? message = null;
+        PgwClientMessage message1 =  new T();
+        if (typeof(T) == typeof(ParseComplete))
+        {
+            Console.Write("a");
+        }
         DataMessage dm = null;
         var now = DateTimeOffset.Now.ToUnixTimeMilliseconds() + 2000;
         
@@ -35,15 +40,15 @@ public class PgwByteBuffer
 
             foreach (var dataMessage in _connection.InputQueue.ToArray())
             {
-                if (dataMessage.Type == (byte)BackendMessageCode.ErrorResponse)
+                if (dataMessage.Value.Type == (byte)BackendMessageCode.ErrorResponse)
                 {
-                    dm = dataMessage;
+                    dm = dataMessage.Value;
                     break;
                 }
-                if (dataMessage.Type == (byte)message.BeType)
+                if (dataMessage.Value.Type == (byte)message1.BeType)
                 {
-                    if(dm!=null && dm.Timestamp>dataMessage.Timestamp)continue;
-                    dm = dataMessage;
+                    if(dm!=null && dm.Timestamp<dataMessage.Value.Timestamp)continue;
+                    dm = dataMessage.Value;
                 }
             }
             
@@ -51,18 +56,19 @@ public class PgwByteBuffer
             var after =  DateTimeOffset.Now.ToUnixTimeMilliseconds();
             if (after > now)
             {
-                throw new Exception("Unable to find " + message.BeType + " message");
+                ConsoleOut.WriteLine("Unable to find " + message1.BeType + " message");
+                return null;
             }
-            if (dm == null) Thread.Sleep(10);
+            if (dm == null) Task.Delay(1).Wait();
         }
         if (dm != null)
         {
             
             
             DataMessage outMsg;
-            while (!_connection.InputQueue.TryTake(out outMsg))
+            while (!_connection.InputQueue.TryRemove(dm.Id,out outMsg))
             {
-                Thread.Sleep(10);
+                Task.Delay(1).Wait();
             }
             if (outMsg == null)
             {
@@ -72,14 +78,13 @@ public class PgwByteBuffer
             {
                 message = new ErrorResponse();
             }
-            else
+            else if (outMsg.Type == (byte)message1.BeType)
             {
-                if (preRead != null)
-                {
-                    preRead.Invoke((T)message);
-                }
+                if (preRead != null)preRead.Invoke((T)message1);
+                message = message1;
             }
-            Console.WriteLine("[SERVER] Recv:* " + message.GetType().Name);
+            ConsoleOut.WriteLine("[SERVER] Recv:* " + (BackendMessageCode)outMsg.Type +
+                                 " Req where " + message1.BeType + " " + (message == null ? "NULL" : ""));
             message.Read(outMsg);
             return (T)message;
         }
@@ -87,12 +92,12 @@ public class PgwByteBuffer
         return null;
     }
 
-    public PgwClientMessage WaitFor<T,K>(Action<T> preAction=null) where T : PgwClientMessage, new() where K : PgwClientMessage, new()
+    public PgwClientMessage? WaitFor<T,K>(Action<T>? preAction=null) where T : PgwClientMessage, new() where K : PgwClientMessage, new()
     {
-        PgwClientMessage message = null;
+        PgwClientMessage? message = null;
         PgwClientMessage message1 = new T();
         PgwClientMessage message2 = new K();
-        DataMessage dm = null;
+        DataMessage? dm = null;
         var now = DateTimeOffset.Now.ToUnixTimeMilliseconds() + 1000L;
 
 
@@ -101,35 +106,37 @@ public class PgwByteBuffer
 
             foreach (var dataMessage in _connection.InputQueue.ToArray())
             {
-                if (dataMessage.Type == (byte)BackendMessageCode.ErrorResponse)
+                if (dataMessage.Value.Type == (byte)BackendMessageCode.ErrorResponse)
                 {
-                    dm = dataMessage;
+                    dm = dataMessage.Value;
                     break;
                 }
-                if (dataMessage.Type == (byte)message1.BeType)
+                if (dataMessage.Value.Type == (byte)message1.BeType)
                 {
-                    if (dm != null && dm.Timestamp > dataMessage.Timestamp) continue;
-                    dm = dataMessage;
-                }else if (dataMessage.Type == (byte)message2.BeType)
+                    if (dm != null && dm.Timestamp < dataMessage.Value.Timestamp) continue;
+                    dm = dataMessage.Value;
+                }
+                else if (dataMessage.Value.Type == (byte)message2.BeType)
                 {
-                    if (dm != null && dm.Timestamp > dataMessage.Timestamp) continue;
-                    dm = dataMessage;
+                    if (dm != null && dm.Timestamp < dataMessage.Value.Timestamp) continue;
+                    dm = dataMessage.Value;
                 }
             }
 
             var after =  DateTimeOffset.Now.ToUnixTimeMilliseconds();
             if (after > now)
             {
-                throw new Exception("Unable to find " + message1.BeType + " message or "+ message2.BeType);
+                ConsoleOut.WriteLine("Unable to find " + message1.BeType + " message or "+ message2.BeType);
+                return null;
             }
-            if (dm == null) Thread.Sleep(10);
+            if (dm == null) Task.Delay(1).Wait();
         }
         if (dm != null)
         {
-            DataMessage outMsg;
-            while (!_connection.InputQueue.TryTake(out outMsg))
+            DataMessage? outMsg;
+            while (!_connection.InputQueue.TryRemove(dm.Id, out outMsg))
             {
-                Thread.Sleep(10);
+                Task.Delay(1).Wait();
             }
             if (outMsg == null)
             {
@@ -148,7 +155,8 @@ public class PgwByteBuffer
                 if(preAction!=null)preAction.Invoke((T)message1);
                 message = message1;
             }
-            Console.WriteLine("[SERVER] Recv:* " + message.GetType().Name);
+            ConsoleOut.WriteLine("[SERVER] Recv:* " + (BackendMessageCode)outMsg.Type+ 
+                                 " Req where "+ message1.BeType + " or "+ message2.BeType+" "+(message==null?"NULL":""));
             message.Read(outMsg);
             return message;
         }
@@ -162,10 +170,10 @@ public class PgwByteBuffer
         //tcp.GetStream()
         //client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
         _connection = connection;
-        _stream = new BufferedStream(client.GetStream(),2000000);
-        
+        _stream = client.GetStream(); //new BufferedStream(client.GetStream(),2000000);
+
         //_sr = new StreamReader(_stream);
-       // _sw = new BinaryWriter(_stream);
+        // _sw = new BinaryWriter(_stream);
     }
 
 
@@ -287,12 +295,7 @@ public class PgwByteBuffer
         ReadFully(_stream, res);
         return BinaryPrimitives.ReverseEndianness(BitConverter.ToInt32(res, 0));
     }
-    /*
-    public void Read(PgwClientMessage pgwClientMessage)
-    {
-        Console.WriteLine("[SERVER] Recv: " + pgwClientMessage.GetType().Name);
-        pgwClientMessage.Read(this);
-    }*/
+    
 
     public List<String> ReadStrings(int bufferLength)
     {
