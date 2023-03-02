@@ -56,7 +56,7 @@ public class PgwByteBuffer
             var after =  DateTimeOffset.Now.ToUnixTimeMilliseconds();
             if (after > now)
             {
-                ConsoleOut.WriteLine("Unable to find " + message1.BeType + " message");
+                ConsoleOut.WriteLine("[WARNING] Unable to find " + message1.BeType + " message");
                 return null;
             }
             if (dm == null) Task.Delay(1).Wait();
@@ -126,7 +126,7 @@ public class PgwByteBuffer
             var after =  DateTimeOffset.Now.ToUnixTimeMilliseconds();
             if (after > now)
             {
-                ConsoleOut.WriteLine("Unable to find " + message1.BeType + " message or "+ message2.BeType);
+                ConsoleOut.WriteLine("[WARNING] Unable to find " + message1.BeType + " message or "+ message2.BeType);
                 return null;
             }
             if (dm == null) Task.Delay(1).Wait();

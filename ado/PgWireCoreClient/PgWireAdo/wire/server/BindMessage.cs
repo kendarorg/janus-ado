@@ -30,7 +30,7 @@ public class BindMessage : PgwServerMessage
 
     public override void Write(PgwByteBuffer stream)
     {
-        ConsoleOut.WriteLine("BindMessage " + _sourcePsName+" portal: "+ _destinationPortal);
+        ConsoleOut.WriteLine("[SERVER] Read: BindMessage " + _sourcePsName+" portal: "+ _destinationPortal);
         if (_sourcePsName == null) throw new InvalidOperationException("Missing query");
 
         var parsLengths = 0;

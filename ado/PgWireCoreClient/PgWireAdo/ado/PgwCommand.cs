@@ -107,7 +107,7 @@ public class PgwCommand : DbCommand,IDisposable
     {
         CallQuery();
         var result = new PgwDataReader(DbConnection, CommandText, _fields,behavior,this._lastExecuteRequest);
-        
+        result.PreLoadData();
         return result;
     }
 
@@ -195,26 +195,18 @@ public class PgwCommand : DbCommand,IDisposable
         
         _portalId = Guid.NewGuid().ToString();
         stream.Write(new BindMessage(_statementId, _portalId, DbParameterCollection));
-        var bindComplete = stream.WaitFor < BindComplete>();
+        var bindComplete = stream.WaitFor <BindComplete>();
 
         stream.Write(new DescribeMessage('P', _portalId));
+
+        var rowDescription = stream.WaitFor< RowDescription>();
+        _fields = rowDescription.Fields;
+        
 
         _lastExecuteRequest = 0;
         stream.Write(new ExecuteMessage(_portalId, 0));
 
-        var commandReceived = stream.WaitFor<CommandComplete,RowDescription>();
-        if (commandReceived is CommandComplete)
-        {
-            stream.Write(new SyncMessage());
-        }
-        else if (commandReceived is RowDescription)
-        {
-            _fields = ((RowDescription)commandReceived).Fields;
-        }
-        else
-        {
-            throw new PgwException("Connection Closed");
-        }
+        
 
     }
     public override void Cancel()

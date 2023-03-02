@@ -13,7 +13,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(DataMessage stream)
         {
-            ConsoleOut.WriteLine("SSLResponse");
+            ConsoleOut.WriteLine("[SERVER] Read: SSLResponse");
         }
 
         public override BackendMessageCode BeType => BackendMessageCode.NoticeResponse;

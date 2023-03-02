@@ -14,7 +14,7 @@ namespace PgWireAdo.wire.client
         
         public override void Read(DataMessage stream)
         {
-            ConsoleOut.WriteLine("ReadyForQuery");
+            ConsoleOut.WriteLine("[SERVER] Read: ReadyForQuery");
             var type = (char)stream.ReadByte();
         }
     }

@@ -14,7 +14,7 @@ namespace PgWireAdo.wire.client
         public override BackendMessageCode BeType => BackendMessageCode.ParseComplete;
         public override void Read(DataMessage stream)
         {
-            ConsoleOut.WriteLine("ParseComplete");
+            ConsoleOut.WriteLine("[SERVER] Read: ParseComplete");
         }
     }
 }

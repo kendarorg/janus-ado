@@ -14,7 +14,7 @@ namespace PgWireAdo.wire.server
     {
         public override void Write(PgwByteBuffer stream)
         {
-            ConsoleOut.WriteLine("SSLNegotation");
+            ConsoleOut.WriteLine("[SERVER] Read: SSLNegotation");
             stream.WriteByte(0x00);
             stream.WriteByte(0x00);
             stream.WriteByte(0x00);

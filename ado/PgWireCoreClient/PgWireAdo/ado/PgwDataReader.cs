@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Data;
 using System.Data.Common;
+using System.IO;
 using PgWireAdo.utils;
 using PgWireAdo.wire.client;
 using PgWireAdo.wire.server;
@@ -49,7 +50,7 @@ public class PgwDataReader : DbDataReader
     public override int RecordsAffected { get; }
     public override bool HasRows
     {
-        get { return true; }
+        get { return _rows!=null && _rows.Count>0; }
     }
     public override bool IsClosed { get; }
 
@@ -181,6 +182,40 @@ public class PgwDataReader : DbDataReader
     {
         return Task.FromResult(Read());
     }
+
+    public void PreLoadData()
+    {
+
+        if (DbConnection.State == ConnectionState.Closed) return;
+        if ((_behavior & CommandBehavior.SingleRow) != 0)
+        {
+            _lastExecuteRequest = 1;
+        }
+        var stream = ((PgwConnection)DbConnection).Stream;
+        var total = _lastExecuteRequest == 0 ? int.MaxValue : _lastExecuteRequest;
+        _currentRow = -1;
+        _rows = new List<List<object>>();
+        for (var i = 0; i < total; i++)
+        {
+            var clientMessage = stream.WaitFor<PgwDataRow, CommandComplete>((d) => { d.Descriptors = _fields; });
+
+            if (clientMessage is PgwDataRow)
+            {
+                var dataRow = (PgwDataRow)clientMessage;
+                if (dataRow.Data.Count > 0)
+                {
+                    _rows.Add(dataRow.Data);
+                }
+            }
+            else if (clientMessage is CommandComplete)
+            {
+                stream.Write(new SyncMessage());
+                stream.WaitFor<ReadyForQuery>();
+
+                break;
+            }
+        }
+    }
     /// <summary>
     /// Advances the reader to the next record in a result set.
     /// </summary>
@@ -196,62 +231,18 @@ public class PgwDataReader : DbDataReader
             _lastExecuteRequest = 1;
         }
         var stream = ((PgwConnection)DbConnection).Stream;
+        
 
-        if (_currentRow >= _rows.Count)
+        if (_currentRow < (_rows.Count - 1))
         {
-            stream.Write(new SyncMessage());
+            _currentRow++;
+            return true;
         }
-
-        if (_currentRow == -1)
+        if ((_behavior & CommandBehavior.CloseConnection) != 0)
         {
-            var total = _lastExecuteRequest==0?int.MaxValue: _lastExecuteRequest;
-            _currentRow = -1;
-            _rows = new List<List<object>>();
-            for (var i = 0; i < total; i++)
-            {
-                var clientMessage = stream.WaitFor<PgwDataRow, CommandComplete>((d) => { d.Descriptors = _fields; });
-
-                if (clientMessage is PgwDataRow)
-                {
-                    var dataRow = (PgwDataRow)clientMessage;
-                    if (dataRow.Data.Count > 0)
-                    {
-                        _rows.Add(dataRow.Data);
-                    }
-                }
-                else if (clientMessage is CommandComplete)
-                {
-                    stream.Write(new SyncMessage());
-                    stream.WaitFor<ReadyForQuery>();
-                    
-                    break;
-                }
-            }
-
-            if (_rows.Count>0)
-            {
-                _currentRow = 0;
-                return true;
-            }
-            if ((_behavior & CommandBehavior.CloseConnection) != 0)
-            {
-                DbConnection.Close();
-            }
-            return false;
+            DbConnection.Close();
         }
-        else
-        {
-            if (_currentRow < (_rows.Count - 1))
-            {
-                _currentRow++;
-                return true;
-            }
-            if ((_behavior & CommandBehavior.CloseConnection) != 0)
-            {
-                DbConnection.Close();
-            }
-            return false;
-        }
+        return false;
 
     }
 

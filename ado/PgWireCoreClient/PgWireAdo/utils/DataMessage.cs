@@ -6,6 +6,28 @@ namespace PgWireAdo.utils;
 
 public class DataMessage
 {
+    protected bool Equals(DataMessage other)
+    {
+        return _id.Equals(other._id) ;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != this.GetType()) return false;
+        return Equals((DataMessage)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(_id);
+    }
+
+    private Guid _id = Guid.NewGuid();
+
+    public Guid Id => _id;
+
     public long Timestamp { get; }
     private int _cursor = 0;
     public char Type { get; }
@@ -13,9 +35,9 @@ public class DataMessage
     public byte[] Data { get; }
 
 
-    public DataMessage(char type, int length, byte[] data)
+    public DataMessage(char type, int length, byte[] data,long timestap)
     {
-        Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        Timestamp = timestap;
         Type = type;
         Length = length;
         Data = data;

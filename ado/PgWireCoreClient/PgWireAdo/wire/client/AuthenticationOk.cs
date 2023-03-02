@@ -15,7 +15,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(DataMessage stream)
         {
-            ConsoleOut.WriteLine("AutenthicationOk");
+            ConsoleOut.WriteLine("[SERVER] Read: AutenthicationOk");
             stream.ReadInt32();
         }
     }

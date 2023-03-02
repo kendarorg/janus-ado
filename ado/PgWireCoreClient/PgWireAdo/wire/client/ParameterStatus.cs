@@ -15,7 +15,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(DataMessage stream)
         {
-            ConsoleOut.WriteLine("ParameterStatus");
+            ConsoleOut.WriteLine("[SERVER] Read: ParameterStatus");
             Key = stream.ReadAsciiString();
             Value = stream.ReadAsciiString();
         }

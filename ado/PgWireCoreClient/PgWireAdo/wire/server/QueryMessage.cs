@@ -18,7 +18,7 @@ namespace PgWireAdo.wire.server
         }
         public override void Write(PgwByteBuffer stream)
         {
-            ConsoleOut.WriteLine("QueryMessage "+_query);
+            ConsoleOut.WriteLine("[SERVER] Read: QueryMessage " + _query);
             if (_query == null) throw new InvalidOperationException("Missing query");
             int length = 1 + 4 + _query.Length+1;
             stream.WriteByte((byte)'Q');

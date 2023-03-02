@@ -28,7 +28,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(DataMessage stream)
         {
-            ConsoleOut.WriteLine("PgwDataRow");
+            ConsoleOut.WriteLine("[SERVER] Read: PgwDataRow");
             var colCount = stream.ReadInt16();
             for (var i = 0; i < colCount; i++)
             {

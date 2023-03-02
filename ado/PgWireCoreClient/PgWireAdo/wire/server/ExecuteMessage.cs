@@ -20,7 +20,7 @@ namespace PgWireAdo.wire.server
         }
         public override void Write(PgwByteBuffer stream)
         {
-            ConsoleOut.WriteLine("ExecuteMessage " + _portal);
+            ConsoleOut.WriteLine("[SERVER] Read: ExecuteMessage " + _portal);
             if (_portal == null) throw new InvalidOperationException("Missing query");
             int length =  4 + _portal.Length+1+4;
             stream.WriteByte((byte)'E');

@@ -15,7 +15,7 @@ public class DescribeMessage : PgwServerMessage
 
     public override void Write(PgwByteBuffer stream)
     {
-        ConsoleOut.WriteLine("DescribeMessage " );
+        ConsoleOut.WriteLine("[SERVER] Read: DescribeMessage ");
         int length =  4 + 1 + _id.Length + 1;
          stream.WriteByte((byte)'D');
         stream.WriteInt32(length); 

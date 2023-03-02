@@ -15,7 +15,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(DataMessage stream)
         {
-            ConsoleOut.WriteLine("BackendKeyData");
+            ConsoleOut.WriteLine("[SERVER] Read: BackendKeyData");
             ProcessKey = stream.ReadInt32();
             SecretKey = stream.ReadInt32();
         }

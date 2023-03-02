@@ -8,7 +8,7 @@ namespace PgWireAdo.wire.client
         public override BackendMessageCode BeType => BackendMessageCode.CommandComplete;
         public override void Read(DataMessage stream)
         {
-            ConsoleOut.WriteLine("CommandComplete");
+            ConsoleOut.WriteLine("[SERVER] Read: CommandComplete");
             var data = stream.ReadAsciiString();
             try
             {

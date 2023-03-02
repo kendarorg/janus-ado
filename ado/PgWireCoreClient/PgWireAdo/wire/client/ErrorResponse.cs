@@ -13,11 +13,12 @@ namespace PgWireAdo.wire.client
         public override BackendMessageCode BeType => BackendMessageCode.ErrorResponse;
         public override void Read(DataMessage stream)
         {
-            ConsoleOut.WriteLine("ErrorResponse");
+            ConsoleOut.WriteLine("[SERVER] Read: ErrorResponse");
             var severity = (char)stream.ReadByte();
             var level = stream.ReadUTF8String();
             var type = (char)stream.ReadByte();
             var message = stream.ReadUTF8String();
+            ConsoleOut.WriteLine("[SERVER]          "+level+" "+message);
             throw new Exception("["+level+"]"+message);
         }
     }

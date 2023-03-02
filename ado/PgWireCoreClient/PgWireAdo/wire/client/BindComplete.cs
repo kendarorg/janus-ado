@@ -15,7 +15,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(DataMessage stream)
         {
-            ConsoleOut.WriteLine("BindComplete");
+            ConsoleOut.WriteLine("[SERVER] Read: BindComplete");
         }
         
     }

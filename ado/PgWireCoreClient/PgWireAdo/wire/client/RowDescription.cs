@@ -19,7 +19,7 @@ namespace PgWireAdo.wire.client
 
         public override void Read(DataMessage stream)
         {
-            ConsoleOut.WriteLine("RowDescription");
+            ConsoleOut.WriteLine("[SERVER] Read: RowDescription");
             var closCount = stream.ReadInt16();
             for (var i = 0; i < closCount; i++)
             {

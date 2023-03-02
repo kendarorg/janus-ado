@@ -85,7 +85,7 @@ namespace PgWireAdo.Test.Utils
                     // do something with line
                 }
             });
-            Thread.Sleep(1000);
+            Task.Delay(1000).Wait();
         }
 
         protected void TbRunAfterAnyTests()
