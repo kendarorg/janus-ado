@@ -78,4 +78,16 @@ namespace Npgsql.Tests;
                 Assert.False(reader.Read());
             }
         }
-    }
+
+        [Test]
+        public void TestSlowness()
+        {
+            ConsoleOut.setup((String a) => { TestContext.Out.WriteLine(a); });
+            using (var conn = OpenConnection())
+            {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = "drop table if  exists test";
+                cmd.ExecuteNonQuery();
+            }
+        }
+}

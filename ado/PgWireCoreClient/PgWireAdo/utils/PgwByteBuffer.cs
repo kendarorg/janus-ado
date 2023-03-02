@@ -23,7 +23,7 @@ public class PgwByteBuffer
     //private readonly StreamReader _sr;
     //private readonly StreamWriter _sw;
 
-    public T? WaitFor<T>(Action<T> preRead=null) where T : PgwClientMessage, new()
+    public T? WaitFor<T>(Action<T>? preRead=null,long timeout =1000L) where T : PgwClientMessage, new()
     {
         PgwClientMessage? message = null;
         PgwClientMessage message1 =  new T();
@@ -32,12 +32,11 @@ public class PgwByteBuffer
             Console.Write("a");
         }
         DataMessage dm = null;
-        var now = DateTimeOffset.Now.ToUnixTimeMilliseconds() + 2000;
+        var now = DateTimeOffset.Now.ToUnixTimeMilliseconds() + timeout;
         
 
         while (dm == null && _connection.Running)
         {
-
             foreach (var dataMessage in _connection.InputQueue.ToArray())
             {
                 if (dataMessage.Value.Type == (byte)BackendMessageCode.ErrorResponse)
@@ -214,12 +213,12 @@ public class PgwByteBuffer
     public void Write(PgwServerMessage message)
     {
         message.Write(this);
-        _stream.FlushAsync().Wait();
+        _stream.FlushAsync();
         //_sw.Flush();
-        
-        
 
-        
+
+
+
     }
 
     public void WriteByte(byte value)
@@ -247,7 +246,7 @@ public class PgwByteBuffer
 
     public void Flush()
     {
-        _stream.Flush();
+        _stream.FlushAsync();
     }
 
     public void Write(byte[] val)

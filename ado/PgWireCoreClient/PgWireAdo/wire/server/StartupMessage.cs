@@ -49,16 +49,16 @@ namespace PgWireAdo.wire.server
             stream.Flush();
 
             //SEND THE MESSAGE PLUS PARAMETERS
-            var authenticationOk =stream.WaitFor< AuthenticationOk>();
-            var backendKeyData =stream.WaitFor< BackendKeyData>();
-            var parameterStatus = stream.WaitFor< ParameterStatus>();
+            var authenticationOk =stream.WaitFor<AuthenticationOk>();
+            var backendKeyData =stream.WaitFor<BackendKeyData>();
+            var parameterStatus = stream.WaitFor<ParameterStatus>();
             while (parameterStatus != null)
             {
                 _serverParameters.Add(parameterStatus.Key, parameterStatus.Value);
-                parameterStatus = stream.WaitFor<ParameterStatus>();
+                parameterStatus = stream.WaitFor<ParameterStatus>(timeout:100L);
             }
 
-            var readyForQuery = stream.WaitFor< ReadyForQuery>();
+            var readyForQuery = stream.WaitFor<ReadyForQuery>();
 
             if (authenticationOk == null || readyForQuery == null || backendKeyData == null)
             {

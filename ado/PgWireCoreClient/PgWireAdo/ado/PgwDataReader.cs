@@ -197,7 +197,7 @@ public class PgwDataReader : DbDataReader
         _rows = new List<List<object>>();
         for (var i = 0; i < total; i++)
         {
-            var clientMessage = stream.WaitFor<PgwDataRow, CommandComplete>((d) => { d.Descriptors = _fields; });
+            var clientMessage = stream.WaitFor<PgwDataRow,CommandComplete>((d) => { d.Descriptors = _fields; });
 
             if (clientMessage is PgwDataRow)
             {

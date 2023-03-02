@@ -79,7 +79,7 @@ public class PgwCommand : DbCommand,IDisposable
         while (commandComplete!=null)
         {
             result += commandComplete.Count;
-            commandComplete = stream.WaitFor<CommandComplete>();
+            commandComplete = stream.WaitFor<CommandComplete>(timeout:100L);
         }
         stream.Write(new SyncMessage());
         var readyForQuery = stream.WaitFor<ReadyForQuery>();
@@ -155,7 +155,7 @@ public class PgwCommand : DbCommand,IDisposable
         }
 
         stream.Write(new SyncMessage());
-        var readyForQuery = stream.WaitFor < ReadyForQuery>();
+        var readyForQuery = stream.WaitFor <ReadyForQuery>();
         
         return result;
     }
@@ -199,7 +199,7 @@ public class PgwCommand : DbCommand,IDisposable
 
         stream.Write(new DescribeMessage('P', _portalId));
 
-        var rowDescription = stream.WaitFor< RowDescription>();
+        var rowDescription = stream.WaitFor<RowDescription>();
         _fields = rowDescription.Fields;
         
 
