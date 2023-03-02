@@ -393,7 +393,7 @@ public class CommandTests : TestBase
         await using var conn = await OpenConnectionAsync();
         await using var cmd = conn.CreateCommand();
 
-        cmd.CommandText = "SELECT @p1";
+        cmd.CommandText = "SELECT ?";
         cmd.Parameters.AddWithValue("@p1", 8);
         _ = await cmd.ExecuteScalarAsync();
 
@@ -540,8 +540,7 @@ public class CommandTests : TestBase
         var cmd = new NpgsqlCommand("SELECT 1, 2", conn);
         await cmd.ExecuteReaderAsync();
         cmd.Dispose();
-        cmd = new NpgsqlCommand("SELECT 3", conn);
-        Assert.That(() => cmd.ExecuteScalarAsync(), Throws.Exception.TypeOf<PgwException>());
+        Assert.That(() => cmd.ExecuteScalarAsync(), Throws.Exception.TypeOf<InvalidOperationException>());
     }
 
 

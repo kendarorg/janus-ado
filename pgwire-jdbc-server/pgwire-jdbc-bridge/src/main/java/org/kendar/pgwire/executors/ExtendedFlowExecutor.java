@@ -12,6 +12,7 @@ import org.kendar.pgwire.utils.SqlParseResult;
 import org.kendar.pgwire.utils.StringParser;
 
 import java.io.IOException;
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -61,8 +62,21 @@ public class ExtendedFlowExecutor extends BaseExecutor {
     }
 
     private void loadBindParameters(BindMessage bind, PreparedStatement ps) throws SQLException {
-        var pmd = ps.getParameterMetaData();
+        ParameterMetaData pmd = null;
+        try {
+            pmd = ps.getParameterMetaData();
+        }catch (Exception ex){}
         for (var i = 0; i < bind.getParameterValues().size(); i++) {
+
+            if(pmd!=null) {
+                loadSingleParameter(bind, ps, pmd, i);
+            }else{
+                ps.setObject(i + 1,bind.getParameterValues().get(i));
+            }
+        }
+    }
+
+    private void loadSingleParameter(BindMessage bind, PreparedStatement ps, ParameterMetaData pmd, int i) throws SQLException {
             var clName = pmd.getParameterClassName(i + 1);
             var clPrec = pmd.getPrecision(i + 1);
             var clScale = pmd.getScale(i + 1);
@@ -70,19 +84,18 @@ public class ExtendedFlowExecutor extends BaseExecutor {
             Class<?> clReal;
             try {
                 clReal = Class.forName(clName);
-                ps.setObject(i + 1,
-                        PgwConverter.toPgWire(
+            var value = PgwConverter.toPgWire(
                                 bind.getFormatCodes().get(i),
                                 clReal,
                                 bind.getParameterValues().get(i),
-                                clPrec, clScale),
+                    clPrec, clScale);
+            ps.setObject(i + 1,
+                    value,
                         sqlType, clScale);
             } catch (Exception e) {
                 throw new SQLException("Invalid type encountered",e);
             }
         }
-    }
-
 
 
     private boolean hasBind(BindMessage bind) {

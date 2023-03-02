@@ -47,9 +47,10 @@ public class StringParser
         return false;
     }
 
-    public static List<SqlParseResult> getTypes(string input)
+    public static List<SqlParseResult>? getTypes(string input)
     {
         var result = new List<SqlParseResult>();
+        if (input == null) return result;
         var sqls = parseSql(input);
         foreach (var sql in sqls)
         {

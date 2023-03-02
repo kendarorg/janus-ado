@@ -22,6 +22,7 @@ namespace PgWireAdo.ado
     }
     public class PgwParameter:DbParameter
     {
+        private object? _value;
 
         public PgwParameter(string parameterName, DbType dbType)
         {
@@ -47,7 +48,20 @@ namespace PgWireAdo.ado
         public override bool IsNullable { get; set; }
         public override string ParameterName { get; [param: AllowNull] set; }
         public override string SourceColumn { get; [param: AllowNull] set; }
-        public override object? Value { get; set; }
+
+        public override object? Value
+        {
+            get => _value;
+            set
+            {
+                if (value != null)
+                {
+                    DbType = PgwConverter.ConvertToDbType(value); ;
+                }
+                _value = value;
+            }
+        }
+
         public override bool SourceColumnNullMapping { get; set; }
         public override int Size { get; set; }
         public override void ResetDbType()

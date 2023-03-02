@@ -175,6 +175,7 @@ public class PgwSocketHandler implements Runnable, Context {
             }catch (Exception ex){
                 try {
                     setTransaction(false);
+                    ex.printStackTrace();
                     System.out.println("[ERROR] On message "+lastFoundedType+" "+ex.getMessage());
                     this.getBuffer().write(new ErrorResponse(ex.getMessage()));
                     this.getBuffer().write(new ReadyForQuery(inTransaction()));

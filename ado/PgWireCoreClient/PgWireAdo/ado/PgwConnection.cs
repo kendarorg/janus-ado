@@ -176,6 +176,27 @@ public class PgwConnection : DbConnection
 
     private bool _running = true;
     private TcpClient _tcpClient;
+    private static readonly char[] _values;
+
+    static PgwConnection()
+    {
+        _values = Enum.GetValues(typeof(BackendMessageCode))
+            .OfType<BackendMessageCode>()
+            .Select(s => (char)s).ToArray();
+    }
+
+    private static void IsValidMessage(char s)
+    {
+        for (var index = 0; index < _values.Length; index++)
+        {
+            if (_values[index] == s)
+            {
+                return;
+            }
+        }
+
+        throw new InvalidOperationException("Message type not allowed " + s);
+    }
 
     public bool Running { get { return _running; } }
     private void ReadDataFromStream(PgwByteBuffer buffer)
@@ -188,6 +209,10 @@ public class PgwConnection : DbConnection
             while (_running && _tcpClient.Connected)
             {
                 var messageType = (char)buffer.ReadByte();
+
+                ConsoleOut.WriteLine("READ " + (char)messageType);
+
+                IsValidMessage(messageType);
                 if (messageType == 'N' && sslNegotiationDone == false)
                 {
                     sslNegotiationDone = true;
@@ -210,8 +235,12 @@ public class PgwConnection : DbConnection
         catch (Exception ex)
         {
             _running = false;
+            if (_tcpClient != null)
+            {
             _tcpClient.Close();
+            _tcpClient=null;
         }
     }
+}
 }
 

@@ -23,7 +23,7 @@ public class PgwByteBuffer
     //private readonly StreamReader _sr;
     //private readonly StreamWriter _sw;
 
-    public T? WaitFor<T>(Action<T>? preRead=null,long timeout =1000L) where T : PgwClientMessage, new()
+    public T? WaitFor<T>(Action<T>? action=null,long timeout =1000L) where T : PgwClientMessage, new()
     {
 
         PgwClientMessage? message = null;
@@ -80,7 +80,7 @@ public class PgwByteBuffer
             }
             else if (outMsg.Type == (byte)message1.BeType)
             {
-                if (preRead != null)preRead.Invoke((T)message1);
+                if (action != null)action.Invoke((T)message1);
                 message = message1;
             }
             ConsoleOut.WriteLine("[SERVER] Recv:* " + (BackendMessageCode)outMsg.Type +
@@ -92,13 +92,13 @@ public class PgwByteBuffer
         return null;
     }
 
-    public PgwClientMessage? WaitFor<T,K>(Action<T>? preAction=null) where T : PgwClientMessage, new() where K : PgwClientMessage, new()
+    public PgwClientMessage? WaitFor<T,K>(Action<T>? tAction = null, Action<K>? kAction = null, long timeout=1000L) where T : PgwClientMessage, new() where K : PgwClientMessage, new()
     {
         PgwClientMessage? message = null;
         PgwClientMessage message1 = new T();
         PgwClientMessage message2 = new K();
         DataMessage? dm = null;
-        var now = DateTimeOffset.Now.ToUnixTimeMilliseconds() + 1000L;
+        var now = DateTimeOffset.Now.ToUnixTimeMilliseconds() + timeout;
 
 
         while (dm == null && _connection.Running && _client.Connected)
@@ -153,11 +153,12 @@ public class PgwByteBuffer
             }
             else if (outMsg.Type == (byte)message2.BeType)
             {
+                if (kAction != null) kAction.Invoke((K)message2);
                 message = message2;
             }
             else if (outMsg.Type == (byte)message1.BeType)
             {
-                if(preAction!=null)preAction.Invoke((T)message1);
+                if(tAction!=null)tAction.Invoke((T)message1);
                 message = message1;
             }
             ConsoleOut.WriteLine("[SERVER] Recv:* " + (BackendMessageCode)outMsg.Type+ 
@@ -228,7 +229,7 @@ public class PgwByteBuffer
     {
         message.Write(this);
         _stream.Flush();
-        ConsoleOut.WriteLine("[SERVER] Sent " + message.GetType().Name);
+        ConsoleOut.WriteLine("[SERVER] Sent Sync " + message.GetType().Name);
         //_sw.Flush();
     }
 
@@ -330,5 +331,100 @@ public class PgwByteBuffer
         }
 
         return result;
+    }
+
+
+    public PgwClientMessage? WaitFor<T, K, F>(Action<T>? tAction = null, Action<K>? kAction = null, Action<F>? fAction = null, long timeout = 1000L)
+        where T : PgwClientMessage, new()
+        where K : PgwClientMessage, new()
+        where F : PgwClientMessage, new()
+    {
+        PgwClientMessage? message = null;
+        PgwClientMessage message1 = new T();
+        PgwClientMessage message2 = new K();
+        PgwClientMessage message3 = new F();
+        DataMessage? dm = null;
+        var now = DateTimeOffset.Now.ToUnixTimeMilliseconds() + timeout;
+
+
+        while (dm == null && _connection.Running && _client.Connected)
+        {
+
+            foreach (var dataMessage in _connection.InputQueue.ToArray())
+            {
+                if (dataMessage.Value.Type == (byte)BackendMessageCode.ErrorResponse)
+                {
+                    dm = dataMessage.Value;
+                    break;
+                }
+                if (dataMessage.Value.Type == (byte)message1.BeType)
+                {
+                    if (dm != null && dm.Timestamp < dataMessage.Value.Timestamp) continue;
+                    dm = dataMessage.Value;
+                }
+                else if (dataMessage.Value.Type == (byte)message2.BeType)
+                {
+                    if (dm != null && dm.Timestamp < dataMessage.Value.Timestamp) continue;
+                    dm = dataMessage.Value;
+                }
+                else if (dataMessage.Value.Type == (byte)message3.BeType)
+                {
+                    if (dm != null && dm.Timestamp < dataMessage.Value.Timestamp) continue;
+                    dm = dataMessage.Value;
+                }
+            }
+
+            var after = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            if (after > now)
+            {
+                ConsoleOut.WriteLine("[WARNING] Unable to find " + message1.BeType
+                                                                 + " message or " + message2.BeType
+                                                                 + " message or " + message3.BeType);
+                return null;
+            }
+            if (dm == null) Task.Delay(1).Wait();
+        }
+
+        if (!_client.Connected)
+        {
+            throw new Exception("DISCONNECTED");
+        }
+        if (dm != null)
+        {
+            DataMessage? outMsg;
+            while (!_connection.InputQueue.TryRemove(dm.Id, out outMsg))
+            {
+                Task.Delay(1).Wait();
+            }
+            if (outMsg == null)
+            {
+                return null;
+            }
+            if (outMsg.Type == (byte)BackendMessageCode.ErrorResponse)
+            {
+                message = new ErrorResponse();
+            }
+            else if (outMsg.Type == (byte)message2.BeType)
+            {
+                if (kAction != null) kAction.Invoke((K)message2);
+                message = message2;
+            }
+            else if (outMsg.Type == (byte)message1.BeType)
+            {
+                if (tAction != null) tAction.Invoke((T)message1);
+                message = message1;
+            }
+            else if (outMsg.Type == (byte)message3.BeType)
+            {
+                if (fAction != null) fAction.Invoke((F)message3);
+                message = message3;
+            }
+            ConsoleOut.WriteLine("[SERVER] Recv:* " + (BackendMessageCode)outMsg.Type +
+                                 " Req where " + message1.BeType + " or " + message2.BeType + " " + (message == null ? "NULL" : ""));
+            message.Read(outMsg);
+            return message;
+        }
+
+        return null;
     }
 }

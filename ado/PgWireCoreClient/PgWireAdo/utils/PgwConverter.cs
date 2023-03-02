@@ -21,6 +21,7 @@ namespace PgWireAdo.utils
                     case (DbType.Int16): return TypesOids.Int2;
                     case (DbType.Int32): return TypesOids.Int4;
                     case (DbType.Int64): return TypesOids.Int8;
+                    case (DbType.Binary): return TypesOids.Bytea;
                     default:
                         throw new Exception();
                 }
@@ -34,6 +35,54 @@ namespace PgWireAdo.utils
             else
             {
                 throw new InvalidOperationException("Missing type");
+            }
+
+        }
+
+        private static Dictionary<Type, DbType> typeMap;
+
+        static PgwConverter()
+        {
+            typeMap= new Dictionary<Type, DbType>();
+            typeMap[typeof(string)] = DbType.String;
+            typeMap[typeof(char[])] = DbType.Binary;
+            typeMap[typeof(int)] = DbType.Int32;
+            typeMap[typeof(Int32)] = DbType.Int32;
+            typeMap[typeof(Int16)] = DbType.Int16;
+            typeMap[typeof(Int64)] = DbType.Int64;
+            typeMap[typeof(Byte[])] = DbType.Binary;
+            typeMap[typeof(Boolean)] = DbType.Boolean;
+            typeMap[typeof(DateTime)] = DbType.DateTime2;
+            typeMap[typeof(DateTimeOffset)] = DbType.DateTimeOffset;
+            typeMap[typeof(Decimal)] = DbType.Decimal;
+            typeMap[typeof(Double)] = DbType.Double;
+            typeMap[typeof(Decimal)] = DbType.Decimal;
+            typeMap[typeof(Byte)] = DbType.Byte;
+            typeMap[typeof(TimeSpan)] = DbType.Time;
+        }
+        public static DbType ConvertToDbType(Object? val)
+        {
+            if (!typeMap.ContainsKey(val.GetType()))
+            {
+                throw new InvalidOperationException("Invalid conversion for "+val.GetType());
+            }
+
+            return typeMap[val.GetType()];
+        }
+        public static TypesOids getOidType(object? value)
+        {
+            if (value == null) return TypesOids.Void;
+            switch (value.GetType().Name.ToLowerInvariant())
+            {
+                case "string": return TypesOids.Varchar;
+                case "bool":
+                case "boolean": return TypesOids.Bit;
+                case "byte": return TypesOids.Char;
+                case "short": return TypesOids.Int2;
+                case "int": return TypesOids.Int4;
+                case "long": return TypesOids.Int8;
+                default:
+                    throw new Exception();
             }
 
         }
@@ -85,8 +134,27 @@ namespace PgWireAdo.utils
             {
                 return BitConverter.GetBytes(BinaryPrimitives.ReverseEndianness((int)v));
             }
+            else if (v.GetType() == typeof(Int16))
+            {
+                return BitConverter.GetBytes(BinaryPrimitives.ReverseEndianness((short)v));
+            }
+            else if (v.GetType() == typeof(Char[]))
+            {
+                var cha = (char[])v;
+                var ba = new byte[cha.Length];
+                for (var index = 0; index < cha.Length; index++)
+                {
+                    ba[index] = (byte)cha[index];
+                }
 
-            throw new NotImplementedException();
+                return ba;
+            }
+            else if (v.GetType() == typeof(byte[]))
+            {
+                return (byte[])v;
+            }
+
+            throw new NotImplementedException(v.GetType().Name);
         }
     }
 }
