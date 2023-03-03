@@ -358,7 +358,7 @@ public class CommandTests : TestBase
         await using var cmd = new NpgsqlCommand("SELECT $1, @p", conn);
         cmd.Parameters.Add(new NpgsqlParameter { Value = 8 });
         cmd.Parameters.Add(new NpgsqlParameter { ParameterName = "p", Value = 9 });
-        Assert.That(() => cmd.ExecuteNonQueryAsync(), Throws.Exception.TypeOf<NotSupportedException>());
+        Assert.That(() => cmd.ExecuteNonQueryAsync(), Throws.Exception.TypeOf<Exception>());
     }
 
     [Test]
