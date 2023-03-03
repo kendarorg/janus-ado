@@ -2,13 +2,20 @@
 using System;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+using PgWireAdo.ado;
+using System.Data.Common;
 
-namespace PgWireAdo.utils;
+namespace PgWireAdo.utils.parse;
 
-public class StringParser
+public class SqlParser
 {
+    private static Regex namedParametersExpression = new Regex(@"([@|:]{1}[a-zA-Z0-9_\-]+)");
+    private static Regex unnamedParametersExpression = new Regex(@"([?]{1})");
+    private static Regex positionalParameterExpression = new Regex(@"([$]{1}[0-9]+)");
+
+
     static Dictionary<string, SqlStringType> select;
-    static StringParser()
+    static SqlParser()
     {
         select = new();
         select.Add("select", SqlStringType.SELECT);
@@ -94,7 +101,7 @@ public class StringParser
             }
             if (trimmed.Contains(";"))
             {
-                foreach (var part in Regex.Split(line,@"((?<=;))"))
+                foreach (var part in Regex.Split(line, @"((?<=;))"))
                 {
                     var trimPart = part.Trim();
                     if (trimPart.EndsWith(";"))
@@ -146,7 +153,7 @@ public class StringParser
                         }
                         else
                         {
-                            // End of string
+                            // Length of string
                             sb.Append(c);
                             i++;
                             break;
@@ -219,5 +226,134 @@ public class StringParser
 
         }
         return false;
+    }
+
+
+
+    public static List<SqlParameter> getParameters(String input,out SqlParameterType type)
+    {
+        var sqlParameters = new List<SqlParameter>();
+        var parsedString = parseString(input);
+        type = SqlParameterType.NONE;
+        var start = 0;
+        for (var index = 0; index < parsedString.Count; index++)
+        {
+            var parsed = parsedString[index];
+            if (parsed.StartsWith("'"))
+            {
+                start += parsed.Length;
+                continue;
+            }
+            SqlParameterType internalType;
+            var founded = retrieveParams(parsed, out internalType);
+            foreach (var sqlParameter in founded)
+            {
+                sqlParameter.Start += start;
+                sqlParameters.Add(sqlParameter);
+            }
+            if (internalType != SqlParameterType.NONE)
+            {
+                if (type != SqlParameterType.NONE && type != internalType)
+                {
+                    throw new InvalidOperationException("Cannot mix parameter styles");
+                }
+                type= internalType;
+            }
+
+            start += parsed.Length;
+        }
+        sqlParameters.Sort((x, y) => x.Start.CompareTo(y.Start));
+
+
+        return sqlParameters;
+    }
+
+    private static IEnumerable<SqlParameter> retrieveParams(string input, out SqlParameterType type)
+    {
+        var sqlParameters = new List<SqlParameter>();
+        type = SqlParameterType.NONE;
+        if (!FindMatches(input, unnamedParametersExpression, sqlParameters,false))
+        {
+            if (!FindMatches(input, positionalParameterExpression, sqlParameters,false))
+            {
+                if (FindMatches(input, namedParametersExpression, sqlParameters,true))
+                {
+                    type = SqlParameterType.NAMED;
+                }
+            }
+            else
+            {
+                type = SqlParameterType.POSITIONAL;
+            }
+        }
+        else
+        {
+            type = SqlParameterType.UNNAMED;
+        }
+        
+        
+        return sqlParameters;
+    }
+
+    private static bool FindMatches(string input, Regex expression, List<SqlParameter> sqlParameters,bool named)
+    {
+        var results = expression.Matches(input);
+        foreach (Match match in results)
+        {
+            var val = match.Groups;
+            var sqlParameter = new SqlParameter()
+            {
+                Named = named,
+                Start = val[0].Index,
+                Length = val[0].Length,
+                Name = val[0].Value
+            };
+            sqlParameters.Add(sqlParameter);
+        }
+
+        return sqlParameters.Count > 0;
+    }
+
+    public static DbParameterCollection MaskParameters(ref string query, List<SqlParameter> parameters,
+        DbParameterCollection dbParameterCollectionIn, SqlParameterType sqlParameterType)
+    {
+        var dbParameterCollection = (PgwParameterCollection)dbParameterCollectionIn;
+        var originalQuery = query.ToString();
+        if (sqlParameterType == SqlParameterType.UNNAMED) return dbParameterCollection;
+        if (sqlParameterType == SqlParameterType.POSITIONAL) return dbParameterCollection;
+        var queryResult = new StringBuilder();
+        var newQueryParameters = new PgwParameterCollection();
+
+        var lastIndex = 0;
+        foreach (var sqlParameter in parameters)
+        {
+            var name = sqlParameter.Name;
+            var src = (PgwParameter)dbParameterCollection[name];
+            var previousQueryPart = originalQuery.Substring(lastIndex, sqlParameter.Start-lastIndex);
+            queryResult.Append(previousQueryPart);
+            queryResult.Append("?");
+            newQueryParameters.Add(new PgwParameter()
+            {
+                Value = src.Value,
+                DbType = src.DbType,
+                Direction = src.Direction,
+                IsNullable = src.IsNullable,
+                Precision = src.Precision,
+                Scale = src.Scale,
+                Size = src.Size,
+                SourceColumn = src.SourceColumn,
+                SourceColumnNullMapping = src.SourceColumnNullMapping,
+                SourceVersion = src.SourceVersion
+            });
+            lastIndex = sqlParameter.Start + sqlParameter.Length;
+        }
+
+        if (lastIndex! < originalQuery.Length)
+        {
+            queryResult.Append(originalQuery.Substring(lastIndex));
+        }
+        query = queryResult.ToString();
+
+        return newQueryParameters;
     }
 }

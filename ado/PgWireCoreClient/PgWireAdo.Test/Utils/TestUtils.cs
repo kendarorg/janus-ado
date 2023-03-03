@@ -43,14 +43,14 @@ public class IssueLink : Attribute
 }
 
 public class NpgsqlParameter:PgwParameter{
-        public NpgsqlParameter(string parameterName, Object? dbType)
+        public NpgsqlParameter(string parameterName, Object? value)
         {
             if (parameterName.StartsWith(":")) parameterName.Substring(1);
             this.ParameterName = parameterName;
-            if (dbType != null)
+            if (value != null)
             {
-                if (typeof(DbType) == dbType.GetType()) DbType = (DbType)dbType;
-                else Value = dbType;
+                if (typeof(DbType) == value.GetType()) DbType = (DbType)value;
+                else Value = value;
             }
         }
 

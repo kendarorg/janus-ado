@@ -7,6 +7,8 @@ public class PgwParameterCollection: DbParameterCollection
 {
     private readonly Object _syncRoot = new Object();
     private readonly List<DbParameter?> _data = new();
+
+    public List<DbParameter> Data=> _data;
     public override int Add(object value)
     {
         _data.Add((DbParameter)value);
@@ -113,7 +115,13 @@ public class PgwParameterCollection: DbParameterCollection
 
     protected override DbParameter GetParameter(string parameterName)
     {
-        return _data.Find(a => parameterName ==a.ParameterName || parameterName == a.ParameterName.Substring(1));
+        if (parameterName.StartsWith(":") || parameterName.StartsWith("@"))
+        {
+            parameterName = parameterName.Substring(1);
+        }
+        return _data.Find(a => parameterName ==a.ParameterName ||
+                               ":" + parameterName == a.ParameterName ||
+                               "@" + parameterName == a.ParameterName);
     }
 
     public override void AddRange(Array values)

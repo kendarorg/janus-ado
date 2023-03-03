@@ -3,6 +3,7 @@ using System.Data;
 using System.Data.Common;
 using System.IO;
 using PgWireAdo.utils;
+using PgWireAdo.utils.parse;
 using PgWireAdo.wire.client;
 using PgWireAdo.wire.server;
 

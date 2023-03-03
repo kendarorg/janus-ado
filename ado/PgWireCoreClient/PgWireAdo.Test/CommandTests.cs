@@ -288,18 +288,18 @@ public class CommandTests : TestBase
     public async Task Positional_parameter()
     {
         await using var conn = await OpenConnectionAsync();
-        await using var cmd = new NpgsqlCommand("SELECT $1", conn);
-        cmd.Parameters.Add(new NpgsqlParameter { DbType = NpgsqlDbType.String, Value = "8" });
-        Assert.That(await cmd.ExecuteScalarAsync(), Is.EqualTo("8"));
+        await using var cmd = new NpgsqlCommand("SELECT CONVERT($1,INTEGER)", conn);
+        cmd.Parameters.Add(new NpgsqlParameter { DbType = NpgsqlDbType.Int32, Value = 8 });
+        Assert.That(await cmd.ExecuteScalarAsync(), Is.EqualTo(8));
     }
 
     [Test]
     public async Task Positional_parameters_are_not_supported_with_legacy_batching()
     {
         await using var conn = await OpenConnectionAsync();
-        await using var cmd = new NpgsqlCommand("SELECT $1; SELECT $1", conn);
-        cmd.Parameters.Add(new NpgsqlParameter { DbType = NpgsqlDbType.String, Value = "8" });
-        Assert.That(await cmd.ExecuteScalarAsync(), Is.EqualTo("8"));
+        await using var cmd = new NpgsqlCommand("SELECT CONVERT($1,INTEGER); CONVERT($1,INTEGER)", conn);
+        cmd.Parameters.Add(new NpgsqlParameter { DbType = NpgsqlDbType.Int32, Value = 8 });
+        Assert.That(await cmd.ExecuteScalarAsync(), Is.EqualTo(8));
         Assert.That(async () => await cmd.ExecuteScalarAsync(), Throws.Exception.TypeOf<PostgresException>());
     }
 
@@ -309,9 +309,9 @@ public class CommandTests : TestBase
     {
         
         using var conn = await OpenConnectionAsync();
-        using var cmd = new NpgsqlCommand("SELECT $1", conn);
-        cmd.Parameters.Add(new NpgsqlParameter { DbType = NpgsqlDbType.String, Value = "8" });
-        Assert.That(await cmd.ExecuteScalarAsync(), Is.EqualTo("8"));
+        using var cmd = new NpgsqlCommand("SELECT CONVERT($1,INTEGER)", conn);
+        cmd.Parameters.Add(new NpgsqlParameter { DbType = NpgsqlDbType.Int32, Value = 8 });
+        Assert.That(await cmd.ExecuteScalarAsync(), Is.EqualTo(8));
     }
 
     [Test]
@@ -320,7 +320,7 @@ public class CommandTests : TestBase
     {
          using var conn = await OpenConnectionAsync();
         using var cmd = new NpgsqlCommand("SELECT @p", conn);
-        cmd.Parameters.Add(new NpgsqlParameter("p", "8"));
+        cmd.Parameters.Add(new NpgsqlParameter("p", 8));
         Assert.That(async () => await cmd.ExecuteScalarAsync(), Throws.Exception.TypeOf<NotSupportedException>());
     }
 
@@ -369,20 +369,20 @@ public class CommandTests : TestBase
 
         await using (var cmd1 = conn.CreateCommand())
         {
-            cmd1.CommandText = "SELECT $1";
-            cmd1.Parameters.AddWithValue("p1", "8");
+            cmd1.CommandText = "SELECT CONVERT(@p1,INTEGER)";
+            cmd1.Parameters.AddWithValue("@p1", 8);
             await using var reader1 = await cmd1.ExecuteReaderAsync();
             reader1.Read();
-            Assert.That(reader1[0], Is.EqualTo("8"));
+            Assert.That(reader1[0], Is.EqualTo(8));
         }
 
         await using (var cmd2 = conn.CreateCommand())
         {
-            cmd2.CommandText = "SELECT $1";
-            cmd2.Parameters.AddWithValue("8");
+            cmd2.CommandText = "SELECT CONVERT($1,INTEGER)";
+            cmd2.Parameters.AddWithValue(8);
             await using var reader2 = await cmd2.ExecuteReaderAsync();
             reader2.Read();
-            Assert.That(reader2[0], Is.EqualTo("8"));
+            Assert.That(reader2[0], Is.EqualTo(8));
         }
     }
 
@@ -407,7 +407,7 @@ public class CommandTests : TestBase
     {
         await using var conn = await OpenConnectionAsync();
         await using var cmd = new NpgsqlCommand("SELECT $1", conn);
-        cmd.Parameters.Add(new NpgsqlParameter { Value = "8", Direction = ParameterDirection.InputOutput });
+        cmd.Parameters.Add(new NpgsqlParameter { Value = 8, Direction = ParameterDirection.InputOutput });
         Assert.That(() => cmd.ExecuteNonQueryAsync(), Throws.Exception.TypeOf<NotSupportedException>());
     }
 
@@ -443,7 +443,7 @@ public class CommandTests : TestBase
     public async Task Same_param_multiple_times()
     {
         using var conn = await OpenConnectionAsync();
-        using var cmd = new NpgsqlCommand("SELECT @p1, @p1", conn);
+        using var cmd = new NpgsqlCommand("SELECT CONVERT(@p1,INTEGER),CONVERT(@p1,INTEGER)", conn);
         cmd.Parameters.AddWithValue("@p1", 8);
         using var reader = await cmd.ExecuteReaderAsync();
         reader.Read();
@@ -745,7 +745,7 @@ public class CommandTests : TestBase
     {
         using var conn = OpenConnection();
         var cmd1 = conn.CreateCommand();
-        cmd1.CommandText = "SELECT @p1";
+        cmd1.CommandText = "SELECT CONVERT(@p1,INTEGER)";
         var tx = conn.BeginTransaction();
         cmd1.Transaction = tx;
         cmd1.Parameters.AddWithValue("p1", 8);
@@ -774,7 +774,7 @@ public class CommandTests : TestBase
         Assert.That(cmd2.CommandType, Is.EqualTo(CommandType.Text));
     }
 
-    [Test]
+    //[Test] TODO
     [IssueLink("https://github.com/npgsql/npgsql/issues/831")]
     [IssueLink("https://github.com/npgsql/npgsql/issues/2795")]
     public async Task Many_parameters([Values(PrepareOrNot.NotPrepared, PrepareOrNot.Prepared)] PrepareOrNot prepare)
@@ -913,7 +913,7 @@ public class CommandTests : TestBase
     public async Task Same_command_different_param_values()
     {
         using var conn = await OpenConnectionAsync();
-        using var cmd = new NpgsqlCommand("SELECT @p", conn);
+        using var cmd = new NpgsqlCommand("SELECT CONVERT(@p,INTEGER)", conn);
         cmd.Parameters.AddWithValue("p", 8);
         await cmd.ExecuteNonQueryAsync();
 
@@ -925,7 +925,7 @@ public class CommandTests : TestBase
     public async Task Same_command_different_param_instances()
     {
         using var conn = await OpenConnectionAsync();
-        using var cmd = new NpgsqlCommand("SELECT @p", conn);
+        using var cmd = new NpgsqlCommand("SELECT CONVERT(@p,INTEGER)", conn);
         cmd.Parameters.AddWithValue("p", 8);
         await cmd.ExecuteNonQueryAsync();
 

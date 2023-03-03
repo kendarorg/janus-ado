@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using PgWireAdo.utils;
+using PgWireAdo.utils.parse;
 using PgWireAdo.wire.client;
 using PgWireAdo.wire.server;
 
@@ -165,7 +166,7 @@ public class PgwCommand : DbCommand,IDisposable
         set
         {
             _commandText = value;
-            _queries = SetupQueries(StringParser.getTypes(value),value);
+            _queries = SetupQueries(SqlParser.getTypes(value),value);
         }
     }
 
@@ -175,7 +176,7 @@ public class PgwCommand : DbCommand,IDisposable
 
     private List<SqlParseResult> SetupQueries(List<SqlParseResult> queries,String query)
     {
-        if(StringParser.isUnknown(queries)){
+        if(SqlParser.isUnknown(queries)){
             return new 
             List<SqlParseResult>(){new SqlParseResult(query,SqlStringType.UNKNOWN)};
 
@@ -209,6 +210,10 @@ public class PgwCommand : DbCommand,IDisposable
             };
         }
 
+        if (_queries == null || _queries.Count == 0 || _currentQuery >= _queries.Count)
+        {
+            throw new InvalidOperationException();
+        }
         var query = _queries[_currentQuery].Value;
         
 
@@ -217,11 +222,19 @@ public class PgwCommand : DbCommand,IDisposable
             throw new InvalidOperationException("Missing query");
         }
         _statementId = Guid.NewGuid().ToString();
-        stream.Write(new ParseMessage(_statementId, query, this.Parameters));
+
+        SqlParameterType parametersType;
+        var parametersCollection = DbParameterCollection;
+        var parameters = SqlParser.getParameters(query, out parametersType);
+        if (parametersType==SqlParameterType.NAMED)
+        {
+            parametersCollection = SqlParser.MaskParameters(ref query, parameters, DbParameterCollection, parametersType);
+        }
+        stream.Write(new ParseMessage(_statementId, query, parametersCollection));
         var parseComplete = stream.WaitFor<ParseComplete>();
         
         _portalId = Guid.NewGuid().ToString();
-        stream.Write(new BindMessage(_statementId, _portalId, DbParameterCollection));
+        stream.Write(new BindMessage(_statementId, _portalId, parametersCollection));
         var bindComplete = stream.WaitFor <BindComplete>();
 
         stream.Write(new DescribeMessage('P', _portalId));
@@ -233,11 +246,14 @@ public class PgwCommand : DbCommand,IDisposable
         _lastExecuteRequest = 0;
         stream.Write(new ExecuteMessage(_portalId, 0));
 
-        
+
 
     }
+
     public override void Cancel()
     {
         throw new NotImplementedException();
     }
+
+    
 }

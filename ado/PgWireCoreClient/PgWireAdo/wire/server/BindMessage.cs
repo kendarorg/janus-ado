@@ -3,6 +3,7 @@ using System.Data;
 using System.Data.Common;
 using PgWireAdo.ado;
 using PgWireAdo.utils;
+using TB.ComponentModel;
 
 namespace PgWireAdo.wire.server;
 
@@ -44,9 +45,18 @@ public class BindMessage : PgwServerMessage
             {
                 parsLengths += 2+4+ ((String)pgwParameter.Value).Length;
             }
+            else if (pgwParameter.Value.GetType() == typeof(byte[]))
+            {
+                parsLengths += 2 + 4 + ((byte[])pgwParameter.Value).Length;
+            }
+            else if (pgwParameter.Value.GetType() == typeof(char[]))
+            {
+                parsLengths += 2 + 4 + ((char[])pgwParameter.Value).Length;
+            }
             else
             {
-                parsLengths += 2+4 + PgwConverter.toBytes(pgwParameter.Value).Length;
+                var stringValue = pgwParameter.Value.As<string>();
+                parsLengths += 2+4 + stringValue.Value.Length;
             }
 
         }
@@ -63,14 +73,27 @@ public class BindMessage : PgwServerMessage
         stream.WriteByte(0);
         stream.WriteInt16((short)_parameters.Count);
 
-        foreach (var oid in _parameters)
+        foreach (var pgwParameter in _parameters)
         {
-            if (oid == null || oid.Value == null || oid.Value.GetType() == typeof(string))
+            if (pgwParameter == null || pgwParameter.Value == null)
             {
                 stream.WriteInt16(0);//Text
-            }else
+            }
+            else if (pgwParameter.Value.GetType() == typeof(string))
             {
-                stream.WriteInt16(1);
+                stream.WriteInt16(0);//Text
+            }
+            else if (pgwParameter.Value.GetType() == typeof(byte[]))
+            {
+                stream.WriteInt16(1);//Binary
+            }
+            else if (pgwParameter.Value.GetType() == typeof(char[]))
+            {
+                stream.WriteInt16(1);//Binary
+            }
+            else
+            {
+                stream.WriteInt16(0);//Text
             }
 
         }
@@ -86,26 +109,48 @@ public class BindMessage : PgwServerMessage
                 stream.WriteInt32(((String)pgwParameter.Value).Length);
                 stream.WriteASCIIString((String)pgwParameter.Value);
             }
-            else
+            else if (pgwParameter.Value.GetType() == typeof(byte[]))
             {
-                var bval = PgwConverter.toBytes(pgwParameter.Value);
+                stream.WriteInt32(((byte[])pgwParameter.Value).Length);
+                stream.Write((byte[])pgwParameter.Value);
+            }
+            else if (pgwParameter.Value.GetType() == typeof(char[]))
+            {
+                var bval = ((char[])pgwParameter.Value).Select(c => (byte)c).ToArray();
                 stream.WriteInt32(bval.Length);
                 stream.Write(bval);
+            }
+            else
+            {
+                var stringValue = pgwParameter.Value.As<string>();
+                stream.WriteInt32(stringValue.Value.Length);
+                stream.WriteASCIIString(stringValue.Value);
             }
 
         }
         stream.WriteInt16((short)_results.Count);
-        foreach (var oid in _results)
+        foreach (var pgwParameter in _results)
         {
-            if (oid == null || oid.Value == null || oid.Value.GetType() == typeof(string))
+            if (pgwParameter == null || pgwParameter.Value == null)
             {
                 stream.WriteInt16(0);//Text
             }
+            else if (pgwParameter.Value.GetType() == typeof(string))
+            {
+                stream.WriteInt16(0);//Text
+            }
+            else if (pgwParameter.Value.GetType() == typeof(byte[]))
+            {
+                stream.WriteInt16(1);//Binary
+            }
+            else if (pgwParameter.Value.GetType() == typeof(char[]))
+            {
+                stream.WriteInt16(1);//Binary
+            }
             else
             {
-                stream.WriteInt16(1);
+                stream.WriteInt16(0);//Text
             }
-
         }
     }
 

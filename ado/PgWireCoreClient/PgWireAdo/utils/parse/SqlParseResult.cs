@@ -1,4 +1,4 @@
-﻿namespace PgWireAdo.utils;
+﻿namespace PgWireAdo.utils.parse;
 
 public class SqlParseResult
 {
