@@ -78,7 +78,11 @@ public class PgwCommand : DbCommand,IDisposable
     public override int ExecuteNonQuery()
     {
         var result = 0;
-        for(int _currentQuery = 0; _currentQuery < _queries.Count;_currentQuery++)
+        if (_queries == null || _queries.Count == 0 || _currentQuery >= _queries.Count)
+        {
+            throw new InvalidOperationException();
+        }
+        for (int _currentQuery = 0; _currentQuery < _queries.Count;_currentQuery++)
         {
             var stream = ((PgwConnection)DbConnection).Stream;
             CallQuery();

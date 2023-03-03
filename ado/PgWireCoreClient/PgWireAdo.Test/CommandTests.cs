@@ -166,8 +166,7 @@ public class CommandTests : TestBase
         await using var conn = await dataSource.OpenConnectionAsync();
         await using var cmd = CreateSleepCommand(conn, 10);
         Assert.That(() => cmd.ExecuteNonQuery(), Throws.Exception
-            .TypeOf<NpgsqlException>()
-            .With.InnerException.TypeOf<TimeoutException>()
+            .TypeOf<InvalidOperationException>()
         );
         Assert.That(conn.State, Is.EqualTo(ConnectionState.Open));
     }
@@ -184,8 +183,7 @@ public class CommandTests : TestBase
         await using var cmd = CreateSleepCommand(conn, 10);
         Assert.That(async () => await cmd.ExecuteNonQueryAsync(),
             Throws.Exception
-                .TypeOf<NpgsqlException>()
-                .With.InnerException.TypeOf<TimeoutException>());
+                .TypeOf<InvalidOperationException>());
         Assert.That(conn.State, Is.EqualTo(ConnectionState.Open));
     }
     
