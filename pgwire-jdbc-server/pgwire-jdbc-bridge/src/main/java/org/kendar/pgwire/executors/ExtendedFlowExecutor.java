@@ -36,7 +36,7 @@ public class ExtendedFlowExecutor extends BaseExecutor {
                 return;
             }
 
-            if (fakeQueries.stream().anyMatch(a -> statement.getQuery().toLowerCase(Locale.ROOT).startsWith(a))) {
+            if (fakeQueries.stream().anyMatch(a -> statement.getQuery().toLowerCase(Locale.ROOT).contains(a))) {
 
                 try{
                     handleExecuteRequest(context, statementName, bind, statement,portal);

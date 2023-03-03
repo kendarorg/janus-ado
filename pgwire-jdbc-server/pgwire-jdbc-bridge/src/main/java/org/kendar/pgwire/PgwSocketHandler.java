@@ -91,9 +91,15 @@ public class PgwSocketHandler implements Runnable, Context {
         BufferedReader in = null;
         try {
             buffer = new PgwByteBuffer(clientSocket);
-            buffer.read(new SSLNegotation());
-            var startup = new StartupMessage(pidCounter.incrementAndGet());
-            buffer.read(startup);
+            var firstLength = buffer.readInt32();
+            if(firstLength==8) {
+                buffer.read(new SSLNegotation(firstLength));
+                var startup = new StartupMessage(pidCounter.incrementAndGet(), -1);
+                buffer.read(startup);
+            }else{
+                var startup = new StartupMessage(pidCounter.incrementAndGet(),firstLength);
+                buffer.read(startup);
+            }
             while(running.get()){
 
                 var messageType = buffer.readByte();

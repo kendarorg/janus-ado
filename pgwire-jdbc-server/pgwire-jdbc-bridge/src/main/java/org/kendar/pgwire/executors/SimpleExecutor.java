@@ -4,10 +4,9 @@ import org.kendar.pgwire.commons.Context;
 import org.kendar.pgwire.flow.BindMessage;
 import org.kendar.pgwire.flow.ParseMessage;
 import org.kendar.pgwire.flow.SyncMessage;
-import org.kendar.pgwire.server.CommandComplete;
-import org.kendar.pgwire.server.EmptyQueryResponse;
-import org.kendar.pgwire.server.ReadyForQuery;
+import org.kendar.pgwire.server.*;
 import org.kendar.pgwire.utils.Field;
+import org.kendar.pgwire.utils.PgwConverter;
 import org.kendar.pgwire.utils.SqlParseResult;
 import org.kendar.pgwire.utils.StringParser;
 
@@ -15,6 +14,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -27,16 +27,44 @@ public class SimpleExecutor extends BaseExecutor{
 
         if (fakeQueries.stream().anyMatch(a -> query.toLowerCase(Locale.ROOT).startsWith(a))) {
 
-            try{
-                handleExecuteRequest(context, query);
-            }catch(Exception ex){
-                context.getBuffer().write(new CommandComplete("RESULT 0 "));
-                context.getBuffer().write(new ReadyForQuery(context.inTransaction()));
+            if(query.equalsIgnoreCase("select oid, typbasetype from pg_type where typname = 'lo'")){
+                handleOdbcStartQuery(context);
+            }else {
+                try {
+                    handleExecuteRequest(context, query);
+                } catch (Exception ex) {
+                    if (query.toLowerCase(Locale.ROOT).startsWith("select")) {
+                        context.getBuffer().write(new CommandComplete("SELECT 0 0"));
+                    }else{
+                        context.getBuffer().write(new CommandComplete("RESULT 0"));
+                    }
+                    context.getBuffer().write(new ReadyForQuery(context.inTransaction()));
+                }
             }
         }else{
             handleExecuteRequest(context, query);
             context.getBuffer().write(new ReadyForQuery(context.inTransaction()));
         }
+    }
+
+    private void handleOdbcStartQuery(Context context) throws SQLException, IOException {
+        var fields = new ArrayList<Field>();
+        fields.add(new Field(
+                "oid",
+                0,
+                0, PgwConverter.toPgwType(Types.BIGINT)
+                , 10, -1, 0
+                , "java.lang.Long", 1, Types.BIGINT));
+        fields.add(new Field(
+                "typbasetype",
+                0,
+                0, PgwConverter.toPgwType(Types.BIGINT)
+                , 10, -1, 0
+                , "java.lang.Long", 1, Types.BIGINT));
+        //context.getBuffer().write(new RowDescription(fields));
+        context.getBuffer().write(new CommandComplete("SELECT 0 0"));
+        //context.getBuffer().write(new ErrorResponse("NOTHING FOUND"));
+        context.getBuffer().write(new ReadyForQuery(false));
     }
 
     private void handleExecuteRequest(Context context, String query) throws SQLException, IOException {

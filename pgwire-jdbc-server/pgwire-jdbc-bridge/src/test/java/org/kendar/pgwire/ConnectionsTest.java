@@ -17,6 +17,8 @@ public class ConnectionsTest {
             "password=secret&" +
             "ssl=false";
 
+
+
     @AfterAll
     static void afterAll(){
         mainThread.stop();

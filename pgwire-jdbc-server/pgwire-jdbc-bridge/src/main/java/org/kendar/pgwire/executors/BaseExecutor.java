@@ -30,6 +30,9 @@ public class BaseExecutor {
         fakeQueries = new ConcurrentSkipListSet<>();
         fakeQueries.add("SET extra_float_digits".toLowerCase(Locale.ROOT));
         fakeQueries.add("SET application_name".toLowerCase(Locale.ROOT));
+        fakeQueries.add("select oid, typbasetype from pg_type where typname = 'lo'".toLowerCase(Locale.ROOT));
+
+
     }
 
     protected boolean shouldHandleAsSingleQuery(List<SqlParseResult> parsed) {

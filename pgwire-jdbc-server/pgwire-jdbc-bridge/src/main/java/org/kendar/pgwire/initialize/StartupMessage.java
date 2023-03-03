@@ -11,16 +11,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class StartupMessage implements PgwClientMessage{
+    private final int length;
     private Map<String, String> parameters;
     private int pid;
 
-    public StartupMessage(int pid) {
+    public StartupMessage(int pid, int firstLength) {
         this.pid = pid;
+        this.length = firstLength;
     }
 
     @Override
     public void read(PgwByteBuffer buffer) throws IOException {
-        var startupMessageRemainingLength = buffer.readInt32(); //112-8
+        var startupMessageRemainingLength = length; //112-8
+        if(length==-1){
+            startupMessageRemainingLength = buffer.readInt32();
+        }
         var protocolVersion = buffer.readInt32(); //196608
         var flatMap = buffer.readStrings(startupMessageRemainingLength-8);
         parameters = new HashMap<String, String>();

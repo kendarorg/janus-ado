@@ -97,4 +97,8 @@ public class PgwByteBuffer {
         outputStream.write(data);
         return this;
     }
+
+    public void setPosition(int i) {
+
+    }
 }
