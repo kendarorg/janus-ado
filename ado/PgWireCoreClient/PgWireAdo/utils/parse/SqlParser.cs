@@ -341,6 +341,7 @@ public class SqlParser
                 Precision = src.Precision,
                 Scale = src.Scale,
                 Size = src.Size,
+                ParameterName = src.ParameterName,
                 SourceColumn = src.SourceColumn,
                 SourceColumnNullMapping = src.SourceColumnNullMapping,
                 SourceVersion = src.SourceVersion

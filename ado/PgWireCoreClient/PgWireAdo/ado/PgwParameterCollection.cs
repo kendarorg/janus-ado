@@ -128,4 +128,27 @@ public class PgwParameterCollection: DbParameterCollection
     {
         throw new NotImplementedException();
     }
+
+    public PgwParameterCollection Clone()
+    {
+        var result = new PgwParameterCollection();
+        foreach (var src in _data)
+        {
+            result.Data.Add(new PgwParameter()
+            {
+                Value = src.Value,
+                DbType = src.DbType,
+                Direction = src.Direction,
+                IsNullable = src.IsNullable,
+                Precision = src.Precision,
+                Scale = src.Scale,
+                Size = src.Size,
+                ParameterName = src.ParameterName,
+                SourceColumn = src.SourceColumn,
+                SourceColumnNullMapping = src.SourceColumnNullMapping,
+                SourceVersion = src.SourceVersion
+            });
+        }
+        return result;
+    }
 }
