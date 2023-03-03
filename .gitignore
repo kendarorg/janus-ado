@@ -1,9 +1,9 @@
 # Compiled class file
 *.class
-
+._DS_Store
 # Log file
 *.log
-
+.DS_Store
 # BlueJ files
 *.ctxt
 

@@ -6,26 +6,63 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PgWireAdo.utils;
+using PgWireAdo.utils.parse;
 using PgWireAdo.wire.client;
 using PgWireAdo.wire.server;
 
 namespace PgWireAdo.ado;
 
-public class PgwCommand : DbCommand
+public class PgwCommand : DbCommand,IDisposable
 {
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            DbTransaction?.Dispose();
+        }
+
+        //base.Dispose(disposing);
+    }
+
     private List<RowDescriptor> _fields;
+    private string _statementId;
+    private string _portalId;
+    private int _lastExecuteRequest;
 
     public PgwCommand(DbConnection dbConnection)
     {
+        DbParameterCollection = new PgwParameterCollection();
         DbConnection = dbConnection;
+        CommandText = String.Empty;
+        CommandType = CommandType.Text;
     }
 
-    public override string CommandText { get; set; }
+    public PgwCommand()
+    {
+        DbParameterCollection = new PgwParameterCollection();
+        CommandText = String.Empty;
+        CommandType = CommandType.Text;
+    }
+
+    public PgwCommand(string commandText, DbConnection conn = null, DbTransaction dbTransaction = null)
+    {
+        DbParameterCollection = new PgwParameterCollection();
+        CommandType = CommandType.Text;
+        CommandText = commandText;
+        DbConnection = conn;
+        DbTransaction = dbTransaction;
+    }
+
+    
+
     public override int CommandTimeout { get; set; }
     public override CommandType CommandType { get; set; }
     public override UpdateRowSource UpdatedRowSource { get; set; }
     protected override DbConnection? DbConnection { get; set; }
     protected override DbParameterCollection DbParameterCollection { get; }
+    protected DbParameterCollection Parameters => DbParameterCollection;
+
     protected override DbTransaction? DbTransaction { get; set; }
     public override bool DesignTimeVisible { get; set; }
 
@@ -35,55 +72,28 @@ public class PgwCommand : DbCommand
         return new PgwParameter();
     }
 
+
+
     public override int ExecuteNonQuery()
     {
         var stream = ((PgwConnection)DbConnection).Stream;
-        CallQuery();
-        var result = 0;
-        var commandComplete = new CommandComplete();
-        if (commandComplete.IsMatching(stream))
+         CallQuery();
+         var result = 0;
+       var commandComplete = stream.WaitFor<CommandComplete>();
+        while (commandComplete!=null)
         {
-            commandComplete.Read(stream);
-            result = commandComplete.Count;
+            result += commandComplete.Count;
+            commandComplete = stream.WaitFor<CommandComplete>(timeout:10L);
         }
-        var readyForQuery = new ReadyForQuery();
-        if (readyForQuery.IsMatching(stream))
-        {
-            readyForQuery.Read(stream);
-        }
-
-
+        stream.Write(new SyncMessage());
+        var readyForQuery = stream.WaitFor<ReadyForQuery>();
+        
 
         return result;
     }
 
-    public override object? ExecuteScalar()
-    {
-        var stream = ((PgwConnection)DbConnection).Stream;
-        CallQuery();
-        object result = null;
-        var dataRow = new PgwDataRow(_fields);
-        if (dataRow.IsMatching(stream))
-        {
-            dataRow.Read(stream);
-            if (dataRow.Data.Count > 0)
-            {
-                result = dataRow.Data[0];
-            }
-        }
-        var commandComplete = new CommandComplete();
-        if (commandComplete.IsMatching(stream))
-        {
-            commandComplete.Read(stream);
-            result = commandComplete.Count;
-        }
-        var readyForQuery = new ReadyForQuery();
-        if (readyForQuery.IsMatching(stream))
-        {
-            readyForQuery.Read(stream);
-        }
-        return result;
-    }
+    
+    
 
     public override void Prepare()
     {
@@ -93,38 +103,157 @@ public class PgwCommand : DbCommand
     protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
     {
         CallQuery();
-        return new PgwDataReader(DbConnection, CommandText, _fields);
+        var result = new PgwDataReader(DbConnection, this, _fields,behavior,this._lastExecuteRequest);
+        result.PreLoadData();
+        return result;
     }
 
 
-    private void CallQuery()
+
+    public override object? ExecuteScalar()
+    {
+        if (DbConnection == null) throw new InvalidOperationException("Missing connection");
+        
+        CallQuery();
+        var stream = ((PgwConnection)DbConnection).Stream;
+        stream.Write(new SyncMessage());
+        object result = null;
+        var dataRow = stream.WaitFor<PgwDataRow>((a) =>
+        {
+            a.Descriptors = _fields;
+        });
+        var hasData = false;
+        if (dataRow != null)
+        {
+            if (dataRow.Data.Count > 0)
+            {
+                var field = _fields[0];
+                hasData = true;
+                result = PgwConverter.convert(field, dataRow.Data[0]);
+            }
+        }
+        
+        var commandComplete = stream.WaitFor <CommandComplete>();
+        while (commandComplete!=null)
+        {
+            if (!hasData)
+            {
+                if (result == null) result = 0;
+                var tmp = (int)result;
+                tmp +=commandComplete.Count;
+                result = tmp;
+            }
+            else
+            {
+                break;
+            }
+            commandComplete = stream.WaitFor<CommandComplete>();
+            //
+        }
+
+        stream.Write(new SyncMessage());
+        var readyForQuery = stream.WaitFor <ReadyForQuery>();
+        
+        return result;
+    }
+
+    private List<SqlParseResult> _queries;
+    private int _currentQuery = 0;
+    private string _commandText;
+    public override string CommandText
+    {
+        get => _commandText;
+        set
+        {
+            _commandText = value;
+            _queries = SetupQueries(SqlParser.getTypes(value),value);
+        }
+    }
+
+    public SqlParseResult CurrentQuery => _queries[_currentQuery];
+
+    public List<RowDescriptor> Fields => _fields;
+
+    private List<SqlParseResult> SetupQueries(List<SqlParseResult> queries,String query)
+    {
+        if(SqlParser.isUnknown(queries)){
+            return new 
+            List<SqlParseResult>(){new SqlParseResult(query,SqlStringType.UNKNOWN)};
+
+        }
+        return queries;
+    }
+
+
+    public bool HasNextResult()
+    {
+        return _queries[_currentQuery].Type==SqlStringType.SELECT;
+    }
+    public bool NextResult()
+    {
+        if (_queries.Count > (_currentQuery + 1))
+        {
+            _currentQuery++;
+            return true;
+        }
+        return false;
+    }
+
+    public void CallQuery()
     {
         var stream = ((PgwConnection)DbConnection).Stream;
-        if (DbParameterCollection == null || DbParameterCollection.Count == 0)
+        if (CommandType == CommandType.TableDirect)
         {
-            var queryMessage = new QueryMessage(CommandText);
-            queryMessage.Write(stream);
-        }
-        else
-        {
-            throw new NotImplementedException();
+            _queries = new List<SqlParseResult>
+            {
+                new ("SELECT * FROM " + CommandText + ";", SqlStringType.SELECT)
+            };
         }
 
-        var rowDescription = new RowDescription();
-        var errorMessage = new ErrorResponse();
-        if (rowDescription.IsMatching(stream))
+        if (_queries == null || _queries.Count == 0 || _currentQuery >= _queries.Count)
         {
-            rowDescription.Read(stream);
-            _fields = rowDescription.Fields;
+            throw new InvalidOperationException();
         }
-        if (errorMessage.IsMatching(stream))
+        var query = _queries[_currentQuery].Value;
+        
+
+        if (query == null || query.Length == 0)
         {
-            errorMessage.Read(stream);
+            throw new InvalidOperationException("Missing query");
         }
+        _statementId = Guid.NewGuid().ToString();
+
+        SqlParameterType parametersType;
+        var parametersCollection = DbParameterCollection;
+        var parameters = SqlParser.getParameters(query, out parametersType);
+        if (parametersType==SqlParameterType.NAMED)
+        {
+            parametersCollection = SqlParser.MaskParameters(ref query, parameters, DbParameterCollection, parametersType);
+        }
+        stream.Write(new ParseMessage(_statementId, query, parametersCollection));
+        var parseComplete = stream.WaitFor<ParseComplete>();
+        
+        _portalId = Guid.NewGuid().ToString();
+        stream.Write(new BindMessage(_statementId, _portalId, parametersCollection));
+        var bindComplete = stream.WaitFor <BindComplete>();
+
+        stream.Write(new DescribeMessage('P', _portalId));
+
+        var rowDescription = stream.WaitFor<RowDescription>();
+        _fields = rowDescription.Fields;
+        
+
+        _lastExecuteRequest = 0;
+        stream.Write(new ExecuteMessage(_portalId, 0));
+
+
 
     }
+
     public override void Cancel()
     {
         throw new NotImplementedException();
     }
+
+    
 }

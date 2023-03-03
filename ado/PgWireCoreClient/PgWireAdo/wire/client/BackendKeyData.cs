@@ -10,18 +10,12 @@ namespace PgWireAdo.wire.client
 {
     public class BackendKeyData:PgwClientMessage
     {
+        public override BackendMessageCode BeType => BackendMessageCode.BackendKeyData;
+        
 
-        public override bool IsMatching(ReadSeekableStream stream)
+        public override void Read(DataMessage stream)
         {
-            return ReadData(stream, () =>
-                stream.ReadByte() == (byte)BackendMessageCode.BackendKeyData
-                && stream.ReadInt32() == 12);
-        }
-
-        public override void Read(ReadSeekableStream stream)
-        {
-            stream.ReadByte();
-            stream.ReadInt32();
+            ConsoleOut.WriteLine("[SERVER] Read: BackendKeyData");
             ProcessKey = stream.ReadInt32();
             SecretKey = stream.ReadInt32();
         }

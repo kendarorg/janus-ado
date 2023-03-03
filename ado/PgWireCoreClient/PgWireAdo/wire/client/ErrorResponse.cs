@@ -9,20 +9,16 @@ namespace PgWireAdo.wire.client
 {
     public class ErrorResponse: PgwClientMessage
     {
-        public override bool IsMatching(ReadSeekableStream stream)
-        {
-            return ReadData(stream, () =>
-                stream.ReadByte() == (byte)BackendMessageCode.ErrorResponse);
-        }
 
-        public override void Read(ReadSeekableStream stream)
+        public override BackendMessageCode BeType => BackendMessageCode.ErrorResponse;
+        public override void Read(DataMessage stream)
         {
-            stream.ReadByte();
-            var length = stream.ReadInt32();
+            ConsoleOut.WriteLine("[SERVER] Read: ErrorResponse");
             var severity = (char)stream.ReadByte();
             var level = stream.ReadUTF8String();
             var type = (char)stream.ReadByte();
             var message = stream.ReadUTF8String();
+            ConsoleOut.WriteLine("[SERVER]          "+level+" "+message);
             throw new Exception("["+level+"]"+message);
         }
     }

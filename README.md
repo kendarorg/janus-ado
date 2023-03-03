@@ -21,6 +21,12 @@ Type "help" for help.
 
 postgres=>
 
+psql -h localhost -p 5432 -U postgres
+create table if not exists test(id int, name varchar);
+insert into test values(1,'test1');
+insert into test values(2,'test2');
+select * from test;
+
 + select 1;
 
 id | name

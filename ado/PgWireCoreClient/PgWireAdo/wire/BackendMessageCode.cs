@@ -5,7 +5,7 @@ interface IBackendMessage
     BackendMessageCode Code { get; }
 }
 
-enum BackendMessageCode : byte
+public enum BackendMessageCode : byte
 {
     AuthenticationRequest = (byte)'R',
     BackendKeyData = (byte)'K',
