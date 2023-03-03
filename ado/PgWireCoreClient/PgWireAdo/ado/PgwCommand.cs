@@ -77,12 +77,13 @@ public class PgwCommand : DbCommand,IDisposable
 
     public override int ExecuteNonQuery()
     {
+        _currentQuery = 0;
         var result = 0;
         if (_queries == null || _queries.Count == 0 || _currentQuery >= _queries.Count)
         {
             throw new InvalidOperationException();
         }
-        for (int _currentQuery = 0; _currentQuery < _queries.Count;_currentQuery++)
+        for (_currentQuery = 0; _currentQuery < _queries.Count;_currentQuery++)
         {
             var stream = ((PgwConnection)DbConnection).Stream;
             CallQuery();
@@ -133,6 +134,7 @@ public class PgwCommand : DbCommand,IDisposable
 
     public override object? ExecuteScalar()
     {
+        _currentQuery = 0;
         if (DbConnection == null) throw new InvalidOperationException("Missing connection");
         
         CallQuery();
