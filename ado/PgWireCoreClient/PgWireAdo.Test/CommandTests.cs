@@ -540,7 +540,7 @@ public class CommandTests : TestBase
         var cmd = new NpgsqlCommand("SELECT 1, 2", conn);
         await cmd.ExecuteReaderAsync();
         cmd.Dispose();
-        Assert.That(() => cmd.ExecuteScalarAsync(), Throws.Exception.TypeOf<InvalidOperationException>());
+        Assert.That(() => cmd.ExecuteScalarAsync(), Throws.Exception.TypeOf<ObjectDisposedException>());
     }
 
 

@@ -151,7 +151,7 @@ public class PgwDataReader : DbDataReader
         {
             return (string)_rows[_currentRow][ordinal];
         }
-        catch (NullReferenceException)
+        catch (Exception ex)
         {
             throw new InvalidOperationException();
         }

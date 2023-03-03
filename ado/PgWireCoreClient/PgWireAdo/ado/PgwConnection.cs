@@ -24,7 +24,7 @@ public class PgwConnection : DbConnection
 
     public PgwConnection(string connectionString)
     {
-        _connectionString = connectionString;
+        ConnectionString = connectionString;
     }
 
     public PgwConnection()

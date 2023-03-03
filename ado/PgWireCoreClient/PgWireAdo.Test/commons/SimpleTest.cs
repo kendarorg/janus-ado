@@ -68,7 +68,7 @@ namespace Npgsql.Tests;
                 cmd.ExecuteNonQuery();
 
                 cmd = conn.CreateCommand();
-                cmd.CommandText = "select * FROM test where name=?";
+                cmd.CommandText = "select * FROM test where name=@val1";
                 cmd.Parameters.AddWithValue("@val1", "test2");
                 var reader = cmd.ExecuteReader();
                 Assert.True(reader.HasRows);

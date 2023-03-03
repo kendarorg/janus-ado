@@ -17,6 +17,7 @@ public class PgwCommand : DbCommand,IDisposable
 {
     protected override void Dispose(bool disposing)
     {
+        _disposed =true;
         if (disposing)
         {
             DbTransaction?.Dispose();
@@ -78,7 +79,17 @@ public class PgwCommand : DbCommand,IDisposable
     {
         var stream = ((PgwConnection)DbConnection).Stream;
          CallQuery();
+         if (_queries[_currentQuery].Type == SqlStringType.CALL || _queries[_currentQuery].Type == SqlStringType.SELECT)
+         {
+             var dataRow = stream.WaitFor<PgwDataRow>((a) => { a.Descriptors = _fields; });
+             while (dataRow != null)
+             {
+                 dataRow = stream.WaitFor<PgwDataRow>((a) => { a.Descriptors = _fields; });
+             }
+         }
+
          var result = 0;
+
        var commandComplete = stream.WaitFor<CommandComplete>();
         while (commandComplete!=null)
         {
@@ -97,7 +108,8 @@ public class PgwCommand : DbCommand,IDisposable
 
     public override void Prepare()
     {
-        
+        if (_disposed) throw new ObjectDisposedException("DbCommand");
+
     }
 
     protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
@@ -105,6 +117,7 @@ public class PgwCommand : DbCommand,IDisposable
         CallQuery();
         var result = new PgwDataReader(DbConnection, this, _fields,behavior,this._lastExecuteRequest);
         result.PreLoadData();
+        
         return result;
     }
 
@@ -160,6 +173,8 @@ public class PgwCommand : DbCommand,IDisposable
     private List<SqlParseResult> _queries;
     private int _currentQuery = 0;
     private string _commandText;
+    private bool _disposed=false;
+
     public override string CommandText
     {
         get => _commandText;
@@ -201,7 +216,10 @@ public class PgwCommand : DbCommand,IDisposable
 
     public void CallQuery()
     {
+
+        if (_disposed) throw new ObjectDisposedException("DbCommand");
         var stream = ((PgwConnection)DbConnection).Stream;
+        if (stream == null) throw new InvalidOperationException();
         if (CommandType == CommandType.TableDirect)
         {
             _queries = new List<SqlParseResult>
@@ -224,11 +242,35 @@ public class PgwCommand : DbCommand,IDisposable
         _statementId = Guid.NewGuid().ToString();
 
         SqlParameterType parametersType;
-        var parametersCollection = DbParameterCollection;
+        var parametersCollection =(PgwParameterCollection) DbParameterCollection;
         var parameters = SqlParser.getParameters(query, out parametersType);
+  
+        var parsedNamed = parameters.
+            FindAll(t=>t.Named).
+            GroupBy(test => test.Name).
+            Select(grp => grp.First()).
+            Select(i=>
+            {
+                if(i.Name.StartsWith(":")|| i.Name.StartsWith("@")) return i.Name.Substring(1);
+                return i.Name;
+            }).ToList();
+        for (var index =(parametersCollection.Data.Count-1); index >=0 ; index--)
+        {
+            var parsed = parametersCollection.Data[index];
+            if (parsed.ParameterName == null) continue;
+            var namOpe = parsed.ParameterName;
+            if(namOpe.StartsWith(":")|| namOpe.StartsWith("@")) namOpe = namOpe.Substring(1);
+            var founded = parsedNamed.FindIndex(a => a == namOpe);
+            if (founded <0)
+            {
+                parametersCollection.Data.RemoveAt(index);
+            }
+        }
+
+
         if (parametersType==SqlParameterType.NAMED)
         {
-            parametersCollection = SqlParser.MaskParameters(ref query, parameters, DbParameterCollection, parametersType);
+            parametersCollection = (PgwParameterCollection)SqlParser.MaskParameters(ref query, parameters, DbParameterCollection, parametersType);
         }
         stream.Write(new ParseMessage(_statementId, query, parametersCollection));
         var parseComplete = stream.WaitFor<ParseComplete>();
