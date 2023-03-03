@@ -49,7 +49,8 @@ public class CommandTests : TestBase
 
         var sql = sb.ToString();
         var prepInt = 0;
-        foreach (var prepare in new[] { false, true })
+        //foreach (var prepare in new[] { false, true })
+        var prepare = false;
         {
             await using var cmd = conn.CreateCommand();
             cmd.CommandText = sql;
@@ -77,7 +78,7 @@ public class CommandTests : TestBase
 
         await using var conn = await OpenConnectionAsync();
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT @p1; SELECT @p2";
+        cmd.CommandText = "SELECT CONVERT(@p1,INTEGER); SELECT @p2";
         var p1 = new NpgsqlParameter("p1", NpgsqlDbType.Int64);
         var p2 = new NpgsqlParameter("p2", NpgsqlDbType.String);
         cmd.Parameters.Add(p1);

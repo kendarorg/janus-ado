@@ -77,27 +77,31 @@ public class PgwCommand : DbCommand,IDisposable
 
     public override int ExecuteNonQuery()
     {
-        var stream = ((PgwConnection)DbConnection).Stream;
-         CallQuery();
-         if (_queries[_currentQuery].Type == SqlStringType.CALL || _queries[_currentQuery].Type == SqlStringType.SELECT)
-         {
-             var dataRow = stream.WaitFor<PgwDataRow>((a) => { a.Descriptors = _fields; });
-             while (dataRow != null)
-             {
-                 dataRow = stream.WaitFor<PgwDataRow>((a) => { a.Descriptors = _fields; });
-             }
-         }
-
-         var result = 0;
-
-       var commandComplete = stream.WaitFor<CommandComplete>();
-        while (commandComplete!=null)
+        var result = 0;
+        for(int _currentQuery = 0; _currentQuery < _queries.Count;_currentQuery++)
         {
-            result += commandComplete.Count;
-            commandComplete = stream.WaitFor<CommandComplete>(timeout:10L);
+            var stream = ((PgwConnection)DbConnection).Stream;
+            CallQuery();
+            if (_queries[_currentQuery].Type == SqlStringType.CALL || _queries[_currentQuery].Type == SqlStringType.SELECT)
+            {
+                var dataRow = stream.WaitFor<PgwDataRow>((a) => { a.Descriptors = _fields; });
+                while (dataRow != null)
+                {
+                    dataRow = stream.WaitFor<PgwDataRow>((a) => { a.Descriptors = _fields; });
+                }
+            }
+
+
+            var commandComplete = stream.WaitFor<CommandComplete>();
+            while (commandComplete != null)
+            {
+                result += commandComplete.Count;
+                commandComplete = stream.WaitFor<CommandComplete>(timeout: 10L);
+            }
+            stream.Write(new SyncMessage());
+            var readyForQuery = stream.WaitFor<ReadyForQuery>();
         }
-        stream.Write(new SyncMessage());
-        var readyForQuery = stream.WaitFor<ReadyForQuery>();
+        
         
 
         return result;
@@ -242,7 +246,7 @@ public class PgwCommand : DbCommand,IDisposable
         _statementId = Guid.NewGuid().ToString();
 
         SqlParameterType parametersType;
-        var parametersCollection =(PgwParameterCollection) DbParameterCollection;
+        var parametersCollection =((PgwParameterCollection) DbParameterCollection).Clone();
         var parameters = SqlParser.getParameters(query, out parametersType);
   
         var parsedNamed = parameters.
@@ -270,7 +274,7 @@ public class PgwCommand : DbCommand,IDisposable
 
         if (parametersType==SqlParameterType.NAMED)
         {
-            parametersCollection = (PgwParameterCollection)SqlParser.MaskParameters(ref query, parameters, DbParameterCollection, parametersType);
+            parametersCollection = (PgwParameterCollection)SqlParser.MaskParameters(ref query, parameters, parametersCollection, parametersType);
         }
         stream.Write(new ParseMessage(_statementId, query, parametersCollection));
         var parseComplete = stream.WaitFor<ParseComplete>();
