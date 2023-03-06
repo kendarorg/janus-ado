@@ -36,3 +36,28 @@ For testing it, first install (if you are interested the Postgres SQL ODBC drive
 
 * Start the main for the JDBC server
 * Run the tests
+
+## Assorted Weirdness
+
+### ODBC
+
+* It does some queries to optimize probably the conversions. Luckily a simple "empty answer" can solve this
+* During the startup there are many properties needed by the driver. If they are not shown everything crashes. Horribly.
+  * Timezone
+  * Codepage
+* Internal queries are used through the "Simple" query protocol
+* The Bind Message seems to not contain the output parameters at all
+* The flow starts with the StartupMessage
+
+### JDBC
+
+* The Bind Message seems to not contain the output parameters at all
+* Named parameters are only a convention
+* Batched queries are allowed only through use multiple statements
+* The flow starts with the SSLNegotiation
+
+### ADO
+
+* Named parameters are only a convention
+* The "old stile batched queries" are now deprecated
+
