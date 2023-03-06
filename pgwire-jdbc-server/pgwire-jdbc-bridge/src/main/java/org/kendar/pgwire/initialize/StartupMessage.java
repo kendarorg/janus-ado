@@ -34,9 +34,14 @@ public class StartupMessage implements PgwClientMessage{
         }
 
         buffer.write(new AuthenticationOk());
-        buffer.write(new BackendKeyData(pid, 5678));
         buffer.write(new ParameterStatus("server_version","15"));
         buffer.write(new ParameterStatus("server_type","JANUS"));
+        buffer.write(new ParameterStatus("client_encoding","UTF8"));
+        buffer.write(new ParameterStatus("DateStyle","ISO, MDY"));
+        buffer.write(new ParameterStatus("TimeZone","CET"));
+        buffer.write(new ParameterStatus("is_superuser","on"));
+        buffer.write(new ParameterStatus("integer_datetimes","on"));
+        buffer.write(new BackendKeyData(pid, 5678));
         buffer.write(new ReadyForQuery(false));
     }
 }

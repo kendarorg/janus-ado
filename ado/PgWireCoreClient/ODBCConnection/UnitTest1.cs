@@ -6,11 +6,7 @@ using System.Data.Odbc;
 namespace ODBCConnection
 {
     /*
-     * CREATE TABLE vbtest(
-    id serial,
-    data text,
-    accessed timestamp
-);
+     * CREATE TABLE vbtest(id serial,data text,accessed timestamp);
 INSERT INTO csharptest(data, accessed) VALUES('Rows: 1', now());
 INSERT INTO csharptest(data, accessed) VALUES('Rows: 2', now());
 INSERT INTO csharptest(data, accessed) VALUES('Rows: 3', now());
@@ -58,7 +54,22 @@ INSERT INTO csharptest(data, accessed) VALUES('Rows: 3', now());
             // Create a dataset
             DataSet dsDB = new DataSet();
             OdbcDataAdapter adDB = new OdbcDataAdapter();
+            new OdbcCommand("CREATE TABLE csharptest(id serial,data text,accessed timestamp);", cnDB)
+                .ExecuteNonQuery();
+
+            new OdbcCommand("INSERT INTO csharptest(data, accessed) VALUES('Rows: 1', now());", cnDB)
+                .ExecuteNonQuery();
+            new OdbcCommand("INSERT INTO csharptest(data, accessed) VALUES('Rows: 2', now());", cnDB)
+                .ExecuteNonQuery();
+            new OdbcCommand("INSERT INTO csharptest(data, accessed) VALUES('Rows: 3', now());", cnDB)
+                .ExecuteNonQuery();
+
+
+
             OdbcCommandBuilder cbDB = new OdbcCommandBuilder(adDB);
+           
+
+
             adDB.SelectCommand = new OdbcCommand(
                 "SELECT id, data, accessed FROM csharptest",
                 cnDB);
