@@ -21,7 +21,7 @@ namespace PgWireAdo.Test.Utils
             var tableName = "temp_table" + Interlocked.Increment(ref _tempTableCounter);
 
             await conn.ExecuteNonQueryAsync(@$"
-DROP TABLE IF EXISTS {tableName};
+DROP TABLE IF EXISTS {tableName} CASCADE;
 CREATE TABLE {tableName} ({columns});");
 
             return tableName;

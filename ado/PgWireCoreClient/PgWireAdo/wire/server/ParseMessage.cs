@@ -24,12 +24,14 @@ public class ParseMessage : PgwServerMessage
     {
         ConsoleOut.WriteLine("[SERVER] Read: ParseMessage " + _query);
         if (_query == null) throw new InvalidOperationException("Missing query");
-        int length =  4 + _query.Length + 1 + _preparedStatementName.Length + 1+2+ _oids.Count*4;
+        var query = EncodingUtils.GetUTF8(_query);
+        
+        int length =  4 + query.Length + 1 + _preparedStatementName.Length + 1+2+ _oids.Count*4;
         stream.WriteByte((byte)'P');
         stream.WriteInt32(length);
         stream.WriteASCIIString(_preparedStatementName);
         stream.WriteByte(0);
-        stream.WriteASCIIString(_query);
+        stream.Write(query.Data);
         stream.WriteByte(0);
         stream.WriteInt16((short)_oids.Count);
         foreach (var oid in _oids)

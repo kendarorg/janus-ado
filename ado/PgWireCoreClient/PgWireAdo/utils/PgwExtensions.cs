@@ -54,7 +54,7 @@ public static class PgwExtesnions{
          using var command = tx == null ? new PgwCommand(sql, conn) : new PgwCommand(sql, conn, tx);
         return command.ExecuteNonQuery();
     }
-    public static async Task<object?> ExecuteScalar(
+    public static object? ExecuteScalar(
         this DbConnection conn, string sql, DbTransaction? tx = null)
     {
         using var command = tx == null ? new PgwCommand(sql, conn) : new PgwCommand(sql, conn, tx);
@@ -63,7 +63,7 @@ public static class PgwExtesnions{
     public static async Task<object?> ExecuteScalarAsync(
         this DbConnection conn, string sql, DbTransaction? tx = null, CancellationToken cancellationToken = default)
     {
-        await using var command = tx == null ? new PgwCommand(sql, conn) : new PgwCommand(sql, conn, tx);
+        using var command = tx == null ? new PgwCommand(sql, conn) : new PgwCommand(sql, conn, tx);
         return await command.ExecuteScalarAsync(cancellationToken);
     }
 }

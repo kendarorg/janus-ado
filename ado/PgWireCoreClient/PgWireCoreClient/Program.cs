@@ -75,7 +75,7 @@ if (reader.HasRows)
     while (reader.Read())
     {
         ConsoleOut.WriteLine("{0}\t{1}", reader.GetInt32(0),
-            reader.GetString(1));
+            reader.GetUTF8(1));
     }
 }
 */

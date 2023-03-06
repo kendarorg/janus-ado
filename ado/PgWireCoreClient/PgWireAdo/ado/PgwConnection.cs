@@ -148,10 +148,10 @@ public class PgwConnection : DbConnection
         return new PgwCommand(this);
     }
 
-    public override ValueTask DisposeAsync()
+    /*public override ValueTask DisposeAsync()
     {
         return new ValueTask(Task.Run(Dispose));
-    }
+    }*/
 
     #region TOIMPLEMENT
 
