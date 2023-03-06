@@ -31,6 +31,8 @@ public class BaseExecutor {
         fakeQueries.add("SET extra_float_digits".toLowerCase(Locale.ROOT));
         fakeQueries.add("SET application_name".toLowerCase(Locale.ROOT));
         fakeQueries.add("select oid, typbasetype from pg_type where typname = 'lo'".toLowerCase(Locale.ROOT));
+        fakeQueries.add("select nspname from pg_namespace".toLowerCase(Locale.ROOT));
+        fakeQueries.add("select n.nspname, c.relname, a.attname, a.atttypid".toLowerCase(Locale.ROOT));
 
 
     }

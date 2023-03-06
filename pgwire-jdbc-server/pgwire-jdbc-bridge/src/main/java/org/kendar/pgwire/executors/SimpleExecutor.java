@@ -31,6 +31,10 @@ public class SimpleExecutor extends BaseExecutor{
 
             if(query.equalsIgnoreCase("select oid, typbasetype from pg_type where typname = 'lo'")){
                 handleOdbcStartQuery(context);
+            }else if(query.contains("select nspname from pg_namespace")){
+                handleSelectSpName(context);
+            }else if(query.contains("select n.nspname, c.relname, a.attname, a.atttypid")){
+                handleHuge(context);
             }else {
                 try {
                     handleExecuteRequest(context, query);
@@ -47,6 +51,37 @@ public class SimpleExecutor extends BaseExecutor{
             handleExecuteRequest(context, query);
             context.getBuffer().write(new ReadyForQuery(context.inTransaction()));
         }
+    }
+
+    private void handleHuge(Context context) throws IOException {
+        context.getBuffer().write(new CommandComplete("SELECT 0"));
+        //context.getBuffer().write(new ErrorResponse("NOTHING FOUND"));
+        context.getBuffer().write(new ReadyForQuery(false));
+    }
+
+    private void handleSelectSpName(Context context) throws SQLException, IOException {
+        var fields = new ArrayList<Field>();
+        fields.add(new Field(
+                "nspname",
+                0,
+                0, PgwConverter.toPgwType(Types.VARCHAR)
+                , 255, -1, 0
+                , "java.lang.String", 1, Types.VARCHAR));
+        context.getBuffer().write(new RowDescription(fields));
+        var byteRow = new ArrayList<ByteBuffer>();
+        byteRow.add(ByteBuffer.wrap("public".getBytes(StandardCharsets.UTF_8)));
+        context.getBuffer().write(new DataRow(byteRow, fields));
+        /*
+        /*
+  oid  | typbasetype
+-------+-------------
+ 16385 |          26
+(1 row)
+
+ */
+        context.getBuffer().write(new CommandComplete("SELECT 1"));
+        //context.getBuffer().write(new ErrorResponse("NOTHING FOUND"));
+        context.getBuffer().write(new ReadyForQuery(false));
     }
 
     private void handleOdbcStartQuery(Context context) throws SQLException, IOException {
