@@ -1,4 +1,17 @@
-Based on
+## Scope
+
+This repo contains:
+
+* Postgres Wire compatible server able to use arbitrary JDBC driver. E.G. if you installed the H2 driver you can send H2 dialect queries
+* ADO Data provider for the aforementioned server
+* Some compatibility tests to use the standard ODBC Postgres driver with the server
+
+In the future
+
+* EF drivers
+* NHibernate dialects
+
+## Based on
 
 * https://segmentfault.com/a/1190000017136059
 * https://gavinray97.github.io/blog/postgres-wire-protocol-jdk-21
@@ -6,99 +19,20 @@ Based on
 * https://www.postgresql.org/docs/current/protocol-error-fields.html
 * https://www.postgresql.org/message-id/AANLkTikkkxN+-UUiGVTzj8jdfS4PdpB8_tDONMFHNqHk@mail.gmail.com
 
-## Simple test
+## How it works
 
-<pre>
-+ psql -h localhost -p 5432 -U postgres
+For testing it, first install (if you are interested the Postgres SQL ODBC driver)
 
-psql (15.1, server 0.0.0)
-WARNING: psql major version 15, server major version 0.0.
-Some psql features might not work.
-WARNING: Console code page (437) differs from Windows code page (1252)
-8-bit characters might not work correctly. See psql reference
-page "Notes for Windows users" for details.
-Type "help" for help.
+### Jdbc
 
-postgres=>
+* Just open the jdbc-server project and run the relevant tests
 
-psql -h localhost -p 5432 -U postgres
-create table if not exists test(id int, name varchar);
-insert into test values(1,'test1');
-insert into test values(2,'test2');
-select * from test;
+### Ado 
 
-+ select 1;
+* Start the main for the JDBC server
+* Run the tests
 
-id | name
-----+------
-1 | one
-2 | two
-(2 rows)
+### ODBC
 
-
-postgres=>
-
-+ \q
-</pre>
-
-## Prepared statement
-
-<pre>
-psql -h localhost -p 5432 -U postgres
-PREPARE foo(text) AS  SELECT  *   FROM    foobar WHERE   foo = $1 ;
-
-EXECUTE foo('foo');
-</pre>
-
-## Protocol Flow
-
-As per https://www.postgresql.org/docs/current/protocol-flow.html
-
-### Simple Query
-
-Unhandled:
-
-* CopyInResponse
-* CopyOutResponse
-
-<pre>
-receive_QueryMessage{
-    try{
-        foreach(queryStrings){
-            if(queryString){
-                return_RowDescritpion
-                return_DataRow
-                return_CommandComplete
-            }else{
-                return_EmptyQueryResponse
-                return_CommandComplete
-            }
-        }
-        return_ReadyForQuery
-    }catch{
-        return_ErrorResponse
-    }
-}
-</pre>
-
-## Function Call
-
-<pre>
-receive_FunctionCallMessage{
-    try{
-        foreach(queryStrings){
-            if(queryString){
-                return_RowDescritpion
-                return_DataRow
-                return_CommandComplete
-            }else{
-                return_EmptyQueryResponse
-                return_CommandComplete
-            }
-        }
-        return_ReadyForQuery
-    }catch{
-        return_ErrorResponse
-    }
-}
-</pre>
+* Start the main for the JDBC server
+* Run the tests
