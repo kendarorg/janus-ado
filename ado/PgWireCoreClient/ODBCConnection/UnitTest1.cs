@@ -79,6 +79,15 @@ INSERT INTO csharptest(data, accessed) VALUES('Rows: 3', now());
             Console.WriteLine("Table 'csharptest' contains {0} rows.\n",
                 dsDB.Tables[0].Rows.Count);
 
+
+            Console.WriteLine("Rows\n=======\n");
+            foreach (DataRow row in dsDB.Tables[0].Rows)
+            {
+                var tmp = row[0]+"|" + row[1]+"|"+row[2];
+                Console.WriteLine(" "+tmp);
+
+            }
+
             // List the columns (using a foreach loop)
             Console.WriteLine("Columns\n=======\n");
 
@@ -86,11 +95,7 @@ INSERT INTO csharptest(data, accessed) VALUES('Rows: 3', now());
                 Console.WriteLine("{0} ({1})", dcDB.ColumnName, dcDB.DataType);
             Console.WriteLine("\n");
 
-            // Iterate through the rows and display the data in the table (using a for loop).
-            // Display the data column last for readability.
-            Console.WriteLine("Data\n====\n");
-            //TODO for (int i = 0; i to continue...");
-            Console.Read();
+            cnDB.Close();
         }
     }
 }
