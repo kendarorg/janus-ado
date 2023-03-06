@@ -44,7 +44,7 @@ public class BindMessage : PgwServerMessage
             else if (pgwParameter.Value.GetType() == typeof(string))
             {
                 var d = EncodingUtils.GetUTF8((String)pgwParameter.Value);
-                parsLengths += 2+4+ d.Length;
+                parsLengths += 2+4+ d.Length+1;
             }
             else if (pgwParameter.Value.GetType() == typeof(byte[]))
             {
@@ -57,7 +57,7 @@ public class BindMessage : PgwServerMessage
             else
             {
                 var stringValue = pgwParameter.Value.As<string>();
-                parsLengths += 2+4 + stringValue.Value.Length;
+                parsLengths += 2+4 + stringValue.Value.Length+1;
             }
 
         }
@@ -111,6 +111,7 @@ public class BindMessage : PgwServerMessage
                 var d = EncodingUtils.GetUTF8((String)pgwParameter.Value);
                 stream.WriteInt32(d.Length);
                 stream.Write(d.Data);
+                stream.WriteByte(0);
             }
             else if (pgwParameter.Value.GetType() == typeof(byte[]))
             {
@@ -128,6 +129,7 @@ public class BindMessage : PgwServerMessage
                 var stringValue = pgwParameter.Value.As<string>();
                 stream.WriteInt32(stringValue.Value.Length);
                 stream.WriteASCIIString(stringValue.Value);
+                stream.WriteByte(0);
             }
 
         }

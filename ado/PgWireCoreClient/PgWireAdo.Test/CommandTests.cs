@@ -296,7 +296,7 @@ public class CommandTests : TestBase
     public async Task Positional_parameters_are_not_supported_with_legacy_batching()
     {
         await using var conn = await OpenConnectionAsync();
-        await using var cmd = new NpgsqlCommand("SELECT CONVERT($1,INTEGER); CONVERT($1,INTEGER)", conn);
+        await using var cmd = new NpgsqlCommand("SELECT CONVERT($1,INTEGER); CONVERT($1,INTEGER);", conn);
         cmd.Parameters.Add(new NpgsqlParameter { DbType = NpgsqlDbType.Int32, Value = 8 });
         Assert.That(await cmd.ExecuteScalarAsync(), Is.EqualTo(8));
         Assert.That(async () => await cmd.ExecuteScalarAsync(), Throws.Exception.TypeOf<PostgresException>());
@@ -392,7 +392,7 @@ public class CommandTests : TestBase
         await using var conn = await OpenConnectionAsync();
         await using var cmd = conn.CreateCommand();
 
-        cmd.CommandText = "SELECT ?";
+        cmd.CommandText = "SELECT @p1";
         cmd.Parameters.AddWithValue("@p1", 8);
         _ = await cmd.ExecuteScalarAsync();
 
