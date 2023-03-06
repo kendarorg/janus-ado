@@ -72,6 +72,27 @@ public class ConnectionsTest {
     }
 
     @Test
+    void testSimpleUtf8() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
+
+        String url = POSTGRES_FAKE_CONNECTION_STRING;
+        try(Connection conn = DriverManager.getConnection(url)) {
+
+            conn.createStatement().execute("create table if not exists test1(id int, name varchar)");
+            conn.createStatement().execute("insert into test1 values(1,'∮ E⋅da = Q,  n → ∞, ∑ f(i)')");
+            conn.createStatement().execute("insert into test1 values(2,'faffa')");
+            var result = conn.createStatement().executeQuery("select * FROM test1");
+            assertTrue(result.next());
+            assertEquals(1, result.getInt(1));
+            assertEquals("∮ E⋅da = Q,  n → ∞, ∑ f(i)", result.getString(2));
+            assertTrue(result.next());
+            assertEquals(2, result.getInt(1));
+            assertEquals("faffa", result.getString(2));
+
+            conn.createStatement().execute("drop table test1");
+        }
+    }
+
+    @Test
     void testPerparedStatement() throws InterruptedException, SQLException, IOException, ClassNotFoundException {
 
 
