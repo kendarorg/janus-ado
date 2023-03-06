@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Data;
 using PgWireAdo.ado;
 using PgWireAdo.wire.client;
+using TB.ComponentModel;
 
 namespace PgWireAdo.utils
 {
@@ -22,8 +23,9 @@ namespace PgWireAdo.utils
                     case (DbType.Int32): return TypesOids.Int4;
                     case (DbType.Int64): return TypesOids.Int8;
                     case (DbType.Binary): return TypesOids.Bytea;
+                    case (DbType.Decimal): return TypesOids.Numeric;
                     default:
-                        throw new Exception();
+                        throw new Exception("Missing type "+type);
                 }
             }else if (value != null)
             {
@@ -108,8 +110,9 @@ namespace PgWireAdo.utils
                     case (TypesOids.Xml):
                     case (TypesOids.Text):
                     case (TypesOids.Json): return s;
+                    case (TypesOids.Numeric): return s.As<Decimal>().Value;
                     default:
-                        throw new Exception();
+                        throw new Exception("Oid type missing = "+doid);
                 }
                 //from string
             }

@@ -6,6 +6,7 @@ using PgWireAdo.utils;
 using PgWireAdo.utils.parse;
 using PgWireAdo.wire.client;
 using PgWireAdo.wire.server;
+using TB.ComponentModel;
 
 namespace PgWireAdo.ado;
 
@@ -207,6 +208,8 @@ public class PgwDataReader : DbDataReader
         return nextIsSelect && result;
     }
 
+
+
     public void PreLoadData()
     {
 
@@ -255,6 +258,8 @@ public class PgwDataReader : DbDataReader
             }
         }
     }
+
+    private bool _dataPreloaded = false;
     /// <summary>
     /// Advances the reader to the next record in a result set.
     /// </summary>
@@ -264,6 +269,13 @@ public class PgwDataReader : DbDataReader
     /// </remarks>
     public override bool Read()
     {
+        if (!_dataPreloaded)
+        {
+            _command.CallQuery();
+            _fields = _command.Fields;
+            PreLoadData();
+            _dataPreloaded = true;
+        }
         if (DbConnection.State == ConnectionState.Closed) return false;
         if ((_behavior & CommandBehavior.SingleRow) != 0)
         {
@@ -305,19 +317,8 @@ public class PgwDataReader : DbDataReader
         return new PgwDbEnumerator(this);
     }
 
-    
-
-    
-
-    new T GetFieldValue<T>(int ordinal)
+    override public T GetFieldValue<T>(int ordinal)
     {
-        var value = GetValue(ordinal);
-        if (value == null) return default(T);
-        if (value.GetType() == typeof(T))
-        {
-            return (T)value;
-        }
-        throw new NotImplementedException();
+        return (T)GetValue(ordinal).As<T>().Value;
     }
-
 }

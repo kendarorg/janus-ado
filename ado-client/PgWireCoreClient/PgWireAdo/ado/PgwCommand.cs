@@ -123,9 +123,9 @@ public class PgwCommand : DbCommand,IDisposable
 
     protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
     {
-        CallQuery();
+        if (_disposed) throw new ObjectDisposedException("DbCommand");
         var result = new PgwDataReader(DbConnection, this, _fields,behavior,this._lastExecuteRequest);
-        result.PreLoadData();
+        //result.PreLoadData();
         
         return result;
     }
@@ -264,6 +264,7 @@ public class PgwCommand : DbCommand,IDisposable
                 if(i.Name.StartsWith(":")|| i.Name.StartsWith("@")) return i.Name.Substring(1);
                 return i.Name;
             }).ToList();
+        
         for (var index =(parametersCollection.Data.Count-1); index >=0 ; index--)
         {
             var parsed = parametersCollection.Data[index];

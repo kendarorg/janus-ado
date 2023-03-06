@@ -21,7 +21,7 @@ In the future
 
 ## How it works
 
-For testing it, first install (if you are interested the Postgres SQL ODBC driver)
+For testing it, first install (if you are interested) the Postgres SQL ODBC driver
 
 ### Jdbc
 
