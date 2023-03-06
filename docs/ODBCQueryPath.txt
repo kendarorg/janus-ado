@@ -1,0 +1,106 @@
+[SERVER] Connect: 0:0:0:0:0:0:0:1
+[SERVER] BEG Recv: StartupMessage
+[SERVER] Sent: AuthenticationOk
+[SERVER] Sent: ParameterStatus
+[SERVER] Sent: ParameterStatus
+[SERVER] Sent: ParameterStatus
+[SERVER] Sent: ParameterStatus
+[SERVER] Sent: ParameterStatus
+[SERVER] Sent: ParameterStatus
+[SERVER] Sent: ParameterStatus
+[SERVER] Sent: BackendKeyData
+[SERVER] Sent: ReadyForQuery
+[SERVER] END Recv: StartupMessage
+[SERVER] Recv: QueryMessage
+[SERVER] Query: SET DateStyle = 'ISO';SET extra_float_digits = 2;show transaction_isolation
+[SERVER] Sent: CommandComplete
+[SERVER] Sent: ReadyForQuery
+[SERVER] Recv: QueryMessage
+[SERVER] Query: select oid, typbasetype from pg_type where typname = 'lo'
+[SERVER] Sent: RowDescription
+[SERVER] Sent: DataRow
+[SERVER] Sent: CommandComplete
+[SERVER] Sent: ReadyForQuery
+[SERVER] Recv: QueryMessage
+[SERVER] Query: set client_encoding to 'WIN1252'
+[SERVER] Sent: CommandComplete
+[SERVER] Sent: ReadyForQuery
+[SERVER] Recv: QueryMessage
+[SERVER] Query: SET statement_timeout = 30000
+[SERVER] Sent: CommandComplete
+[SERVER] Sent: ReadyForQuery
+[SERVER] Recv: QueryMessage
+[SERVER] Query: CREATE TABLE csharptest(id serial,data text,accessed timestamp);
+[SERVER] Sent: CommandComplete
+[SERVER] Sent: ReadyForQuery
+[SERVER] Recv: QueryMessage
+[SERVER] Query: INSERT INTO csharptest(data, accessed) VALUES('Rows: 1', now());
+[SERVER] Sent: CommandComplete
+[SERVER] Sent: ReadyForQuery
+[SERVER] Recv: QueryMessage
+[SERVER] Query: INSERT INTO csharptest(data, accessed) VALUES('Rows: 2', now());
+[SERVER] Sent: CommandComplete
+[SERVER] Sent: ReadyForQuery
+[SERVER] Recv: QueryMessage
+[SERVER] Query: INSERT INTO csharptest(data, accessed) VALUES('Rows: 3', now());
+[SERVER] Sent: CommandComplete
+[SERVER] Sent: ReadyForQuery
+[SERVER] Recv: QueryMessage
+[SERVER] Query: SELECT id, data, accessed FROM csharptest
+[SERVER] Sent: RowDescription
+[SERVER] Sent: DataRow
+[SERVER] Sent: DataRow
+[SERVER] Sent: DataRow
+[SERVER] Sent: CommandComplete
+[SERVER] Sent: ReadyForQuery
+[SERVER] Recv: QueryMessage
+[SERVER] Query: select current_schema()
+[SERVER] Sent: RowDescription
+[SERVER] Sent: DataRow
+[SERVER] Sent: CommandComplete
+[SERVER] Sent: ReadyForQuery
+[SERVER] Recv: QueryMessage
+[SERVER] Query: select nspname from pg_namespace n, pg_class c where c.relnamespace=n.oid and c.oid='"csharptest"'::regclass
+[ERROR] On message Q org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "pg_namespace" not found; SQL statement:
+select nspname from pg_namespace n, pg_class c where c.relnamespace=n.oid and c.oid='"csharptest"'::regclass [42102-214]
+[SERVER] Sent: ErrorResponse
+[SERVER] Sent: ReadyForQuery
+java.io.IOException: org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "pg_namespace" not found; SQL statement:
+select nspname from pg_namespace n, pg_class c where c.relnamespace=n.oid and c.oid='"csharptest"'::regclass [42102-214]
+	at org.kendar.pgwire.flow.QueryMessage.handle(QueryMessage.java:25)
+	at org.kendar.pgwire.PgwSocketHandler.respondToClient(PgwSocketHandler.java:180)
+	at org.kendar.pgwire.PgwSocketHandler.lambda$run$0(PgwSocketHandler.java:88)
+	at java.base/java.lang.Thread.run(Thread.java:829)
+Caused by: org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "pg_namespace" not found; SQL statement:
+select nspname from pg_namespace n, pg_class c where c.relnamespace=n.oid and c.oid='"csharptest"'::regclass [42102-214]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:502)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:477)
+	at org.h2.message.DbException.get(DbException.java:223)
+	at org.h2.message.DbException.get(DbException.java:199)
+	at org.h2.command.Parser.getTableOrViewNotFoundDbException(Parser.java:8398)
+	at org.h2.command.Parser.getTableOrViewNotFoundDbException(Parser.java:8369)
+	at org.h2.command.Parser.readTableOrView(Parser.java:8358)
+	at org.h2.command.Parser.readTablePrimary(Parser.java:1863)
+	at org.h2.command.Parser.readTableReference(Parser.java:2334)
+	at org.h2.command.Parser.parseSelectFromPart(Parser.java:2772)
+	at org.h2.command.Parser.parseSelect(Parser.java:2878)
+	at org.h2.command.Parser.parseQueryPrimary(Parser.java:2762)
+	at org.h2.command.Parser.parseQueryTerm(Parser.java:2633)
+	at org.h2.command.Parser.parseQueryExpressionBody(Parser.java:2612)
+	at org.h2.command.Parser.parseQueryExpressionBodyAndEndOfQuery(Parser.java:2605)
+	at org.h2.command.Parser.parseQueryExpression(Parser.java:2598)
+	at org.h2.command.Parser.parseQuery(Parser.java:2567)
+	at org.h2.command.Parser.parsePrepared(Parser.java:724)
+	at org.h2.command.Parser.parse(Parser.java:689)
+	at org.h2.command.Parser.parse(Parser.java:661)
+	at org.h2.command.Parser.prepareCommand(Parser.java:569)
+	at org.h2.engine.SessionLocal.prepareLocal(SessionLocal.java:631)
+	at org.h2.engine.SessionLocal.prepareCommand(SessionLocal.java:554)
+	at org.h2.jdbc.JdbcConnection.prepareCommand(JdbcConnection.java:1116)
+	at org.h2.jdbc.JdbcStatement.executeInternal(JdbcStatement.java:237)
+	at org.h2.jdbc.JdbcStatement.execute(JdbcStatement.java:223)
+	at org.kendar.pgwire.executors.SimpleExecutor.executeSingleQuery(SimpleExecutor.java:121)
+	at org.kendar.pgwire.executors.SimpleExecutor.handleExecuteRequest(SimpleExecutor.java:105)
+	at org.kendar.pgwire.executors.SimpleExecutor.handle(SimpleExecutor.java:47)
+	at org.kendar.pgwire.flow.QueryMessage.handle(QueryMessage.java:23)
+	... 3 more
