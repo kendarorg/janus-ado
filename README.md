@@ -37,6 +37,20 @@ For testing it, first install (if you are interested the Postgres SQL ODBC drive
 * Start the main for the JDBC server
 * Run the tests
 
+### Command line
+
+* In pgsql folder you can find the command line client. To make an example just run
+
+    psql -h localhost -p 5432 -U postgres
+
+And then in the prompt
+
+    create table if not exists test(id int, name varchar);
+    insert into test values(1,'test1');
+    insert into test values(2,'test2');
+    select * from test;
+
+
 ## Assorted Weirdness
 
 ### ODBC
