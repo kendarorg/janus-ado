@@ -105,7 +105,8 @@ public class PgwDataReader : DbDataReader
 
     public override decimal GetDecimal(int ordinal)
     {
-        throw new NotImplementedException();
+        var data = GetString(ordinal);
+        return data.As<decimal>().Value;
     }
 
     public override double GetDouble(int ordinal)

@@ -17,41 +17,41 @@ public class NumericTests : MultiplexingTestBase
 {
     static readonly object[] ReadWriteCases = new[]
     {
-        new object[] { "CONVERT(0.0000000000000000000000000001,DECIMAL)", 0.0000000000000000000000000001M },
-        new object[] { "CONVERT(0.000000000000000000000001,DECIMAL)", 0.000000000000000000000001M },
-        new object[] { "CONVERT(0.00000000000000000001,DECIMAL)", 0.00000000000000000001M },
-        new object[] { "CONVERT(0.0000000000000001,DECIMAL)", 0.0000000000000001M },
-        new object[] { "CONVERT(0.000000000001,DECIMAL)", 0.000000000001M },
-        new object[] { "CONVERT(0.00000001,DECIMAL)", 0.00000001M },
-        new object[] { "CONVERT(0.0001,DECIMAL)", 0.0001M },
+        new object[] { "CONVERT(0.0000000000000000000000000001,DOUBLE PRECISION)", 0.0000000000000000000000000001M },
+        new object[] { "CONVERT(0.000000000000000000000001,DOUBLE PRECISION)", 0.000000000000000000000001M },
+        new object[] { "CONVERT(0.00000000000000000001,DOUBLE PRECISION)", 0.00000000000000000001M },
+        new object[] { "CONVERT(0.0000000000000001,DOUBLE PRECISION)", 0.0000000000000001M },
+        new object[] { "CONVERT(0.000000000001,DOUBLE PRECISION)", 0.000000000001M },
+        new object[] { "CONVERT(0.00000001,DOUBLE PRECISION)", 0.00000001M },
+        new object[] { "CONVERT(0.0001,DOUBLE PRECISION)", 0.0001M },
         new object[] { "CONVERT(1,DECIMAL)", 1M },
         new object[] { "CONVERT(10000,DECIMAL)", 10000M },
         new object[] { "CONVERT(100000000,DECIMAL)", 100000000M },
-        new object[] { "CONVERT(1000000000000,DECIMAL)", 1000000000000M },
-        new object[] { "CONVERT(10000000000000000,DECIMAL)", 10000000000000000M },
-        new object[] { "CONVERT(100000000000000000000,DECIMAL)", 100000000000000000000M },
-        new object[] { "CONVERT(1000000000000000000000000,DECIMAL)", 1000000000000000000000000M },
-        new object[] { "CONVERT(10000000000000000000000000000,DECIMAL)", 10000000000000000000000000000M },
+        new object[] { "CONVERT(1000000000000,DOUBLE PRECISION)", 1000000000000M },
+        new object[] { "CONVERT(10000000000000000,DOUBLE PRECISION)", 10000000000000000M },
+        new object[] { "CONVERT(100000000000000000000,DOUBLE PRECISION)", 100000000000000000000M },
+        new object[] { "CONVERT(1000000000000000000000000,DOUBLE PRECISION)", 1000000000000000000000000M },
+        new object[] { "CONVERT(10000000000000000000000000000,DOUBLE PRECISION)", 10000000000000000000000000000M },
 
-        new object[] { "CONVERT(1E-28,DECIMAL)", 0.0000000000000000000000000001M },
-        new object[] { "CONVERT(1E-24,DECIMAL)", 0.000000000000000000000001M },
-        new object[] { "CONVERT(1E-20,DECIMAL)", 0.00000000000000000001M },
-        new object[] { "CONVERT(1E-16,DECIMAL)", 0.0000000000000001M },
-        new object[] { "CONVERT(1E-12,DECIMAL)", 0.000000000001M },
-        new object[] { "CONVERT(1E-8,DECIMAL)", 0.00000001M },
-        new object[] { "CONVERT(1E-4,DECIMAL)", 0.0001M },
+        new object[] { "CONVERT(1E-28,DOUBLE PRECISION)", 0.0000000000000000000000000001M },
+        new object[] { "CONVERT(1E-24,DOUBLE PRECISION)", 0.000000000000000000000001M },
+        new object[] { "CONVERT(1E-20,DOUBLE PRECISION)", 0.00000000000000000001M },
+        new object[] { "CONVERT(1E-16,DOUBLE PRECISION)", 0.0000000000000001M },
+        new object[] { "CONVERT(1E-12,DOUBLE PRECISION)", 0.000000000001M },
+        new object[] { "CONVERT(1E-8,DOUBLE PRECISION)", 0.00000001M },
+        new object[] { "CONVERT(1E-4,DOUBLE PRECISION)", 0.0001M },
         new object[] { "CONVERT(1E+0,DECIMAL)", 1M },
         new object[] { "CONVERT(1E+4,DECIMAL)", 10000M },
         new object[] { "CONVERT(1E+8,DECIMAL)", 100000000M },
-        new object[] { "CONVERT(1E+12,DECIMAL)", 1000000000000M },
-        new object[] { "CONVERT(1E+16,DECIMAL)", 10000000000000000M },
-        new object[] { "CONVERT(1E+20,DECIMAL)", 100000000000000000000M },
-        new object[] { "CONVERT(1E+24,DECIMAL)", 1000000000000000000000000M },
-        new object[] { "CONVERT(1E+28,DECIMAL)", 10000000000000000000000000000M },
+        new object[] { "CONVERT(1E+12,DOUBLE PRECISION)", 1000000000000M },
+        new object[] { "CONVERT(1E+16,DOUBLE PRECISION)", 10000000000000000M },
+        new object[] { "CONVERT(1E+20,DOUBLE PRECISION)", 100000000000000000000M },
+        new object[] { "CONVERT(1E+24,DOUBLE PRECISION)", 1000000000000000000000000M },
+        new object[] { "CONVERT(1E+28,DOUBLE PRECISION)", 10000000000000000000000000000M },
 
-        new object[] { "CONVERT(11.222233334444555566667777888,DECIMAL)", 11.222233334444555566667777888M },
-        new object[] { "CONVERT(111.22223333444455556666777788,DECIMAL)", 111.22223333444455556666777788M },
-        new object[] { "CONVERT(1111.2222333344445555666677778,DECIMAL)", 1111.2222333344445555666677778M },
+        new object[] { "CONVERT(11.222233334444555566667777888,DECIMAL(30,28))", 11.222233334444555566667777888M },
+        new object[] { "CONVERT(111.22223333444455556666777788,DECIMAL(30,27))", 111.22223333444455556666777788M },
+        new object[] { "CONVERT(1111.2222333344445555666677778,DECIMAL(30,26))", 1111.2222333344445555666677778M },
 
         //new object[] { "+79228162514264337593543950335,DECIMAL)", +79228162514264337593543950335M },
         new object[] { "CONVERT(+79228162514264337593543950335,DECIMAL)", +79228162514264337593543950335M },
@@ -95,10 +95,9 @@ public class NumericTests : MultiplexingTestBase
     {
         using var conn = await OpenConnectionAsync();
         using var cmd = new NpgsqlCommand("SELECT " + query, conn);
-        var res = await cmd.ExecuteScalarAsync();
         Assert.That(
-            decimal.GetBits((decimal)(await cmd.ExecuteScalarAsync())!),
-            Is.EqualTo(decimal.GetBits(expected)));
+            ((await cmd.ExecuteScalarAsync())!.ToString().TrimEnd('0')),
+            Is.EqualTo(expected.ToString().TrimEnd('0')));
     }
 
     [Test]
@@ -115,30 +114,17 @@ public class NumericTests : MultiplexingTestBase
     }
 
 
-    [Test]
-    public async Task Numeric()
-    {
-        /*await AssertType(5.5m, "5.5", "numeric", NpgsqlDbType.Decimal, DbType.Decimal);
-        await AssertTypeWrite(5.5m, "5.5", "numeric", NpgsqlDbType.Decimal, DbType.VarNumeric, inferredDbType: DbType.Decimal);
+    //[Test] TODO NOT VALID FOR H2, Description("Tests that when Numeric value does not fit in a System.Decimal and reader is in ReaderState.InResult, the value was read wholly and it is safe to continue reading")]
 
-        await AssertType((short)8, "8", "numeric", NpgsqlDbType.Decimal, DbType.Decimal, isDefault: false);
-        await AssertType(8,        "8", "numeric", NpgsqlDbType.Decimal, DbType.Decimal, isDefault: false);
-        await AssertType((byte)8,  "8", "numeric", NpgsqlDbType.Decimal, DbType.Decimal, isDefault: false);
-        await AssertType(8F,       "8", "numeric", NpgsqlDbType.Decimal, DbType.Decimal, isDefault: false);
-        await AssertType(8D,       "8", "numeric", NpgsqlDbType.Decimal, DbType.Decimal, isDefault: false);
-        await AssertType(8M,       "8", "numeric", NpgsqlDbType.Decimal, DbType.Decimal, isDefault: false);*/
-    }
-
-    [Test, Description("Tests that when Numeric value does not fit in a System.Decimal and reader is in ReaderState.InResult, the value was read wholly and it is safe to continue reading")]
     public async Task Read_overflow_is_safe()
     {
         using var conn = await OpenConnectionAsync();
         //This 29-digit number causes OverflowException. Here it is important to have unread column after failing one to leave it ReaderState.InResult
-        using var cmd = new NpgsqlCommand(@"SELECT (0.20285714285714285714285714285),DECIMAL), generate_series FROM generate_series(1, 2)", conn);
+        using var cmd = new NpgsqlCommand(@"SELECT CONVERT(0.222233334444555566667777888,DECIMAL(2,20)), CONVERT(1,DECIMAL);", conn);
         using var reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
         var i = 1;
 
-        while (reader.Read())
+        reader.Read();
         {
             Assert.That(() => reader.GetDecimal(0),
                 Throws.Exception

@@ -113,6 +113,7 @@ public class PgwConverter {
             case Types.TINYINT:return TypesOids.Int2;
             case Types.SQLXML:return TypesOids.Varchar;
             case Types.ROWID:return TypesOids.Int8;
+            case Types.BOOLEAN:return TypesOids.Bool;
             case 0:return TypesOids.Void;
         }
         throw new SQLException("NOT RECOGNIZED COLUMN TYPE "+columnType);
@@ -138,7 +139,8 @@ public class PgwConverter {
             if(rs.getString(i)==null){
                 return ByteBuffer.wrap(new byte[]{});
             }else {
-                return ByteBuffer.wrap(rs.getString(i).getBytes(StandardCharsets.UTF_8));
+                var str = rs.getString(i);
+                return ByteBuffer.wrap(str.getBytes(StandardCharsets.UTF_8));
             }
         }
         var ns = field.getColumnClassName().split("\\.");

@@ -114,6 +114,7 @@ namespace PgWireAdo.utils
                     case (TypesOids.Text):
                     case (TypesOids.Json): return s;
                     case (TypesOids.Numeric): return s.As<Decimal>().Value;
+                    case (TypesOids.Float8): return s.As<Decimal>().Value;
                     default:
                         throw new Exception("Oid type missing = "+doid);
                 }
@@ -184,7 +185,8 @@ namespace PgWireAdo.utils
                 var decimalPlaces = GetDecimalPlaces(multiplier);
                 var power = (long)Math.Pow(10, decimalPlaces);
 
-                return (BigInteger.Pow(10, exponent) * (long)(multiplier * power)) / power;
+                var res = (BigInteger.Pow(10, exponent) * (long)(multiplier * power)) / power;
+                return res;
             }
             catch (Exception e)
             {
