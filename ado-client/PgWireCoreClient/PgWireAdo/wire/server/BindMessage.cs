@@ -11,7 +11,7 @@ public class BindMessage : PgwServerMessage
 {
     private String _destinationPortal;
     private String _sourcePsName;
-    private List<PgwParameter> _parameters = new ();
+    private List<PgwParameter> _inputParameters = new ();
     private List<PgwParameter> _results = new();
 
     public BindMessage(string statementId, string commandText, DbParameterCollection parameters)
@@ -20,9 +20,15 @@ public class BindMessage : PgwServerMessage
         _destinationPortal = commandText;
         foreach (DbParameter dbParameter in parameters)
         {
-            if (dbParameter.Direction == ParameterDirection.Input)
+            if (dbParameter.Direction == ParameterDirection.Input|| dbParameter.Direction == ParameterDirection.InputOutput)
             {
-                _parameters.Add((PgwParameter)dbParameter);
+                _inputParameters.Add((PgwParameter)dbParameter);
+            }
+            if (dbParameter.Direction == ParameterDirection.ReturnValue || 
+                dbParameter.Direction == ParameterDirection.Output ||
+                dbParameter.Direction == ParameterDirection.InputOutput)
+            {
+                _results.Add((PgwParameter)dbParameter);
             }
         }
 
@@ -35,7 +41,7 @@ public class BindMessage : PgwServerMessage
         if (_sourcePsName == null) throw new InvalidOperationException("Missing query");
 
         var parsLengths = 0;
-        foreach (var pgwParameter in _parameters)
+        foreach (var pgwParameter in _inputParameters)
         {
             if (pgwParameter == null || pgwParameter.Value == null)
             {
@@ -63,7 +69,7 @@ public class BindMessage : PgwServerMessage
         }
 
         int length = 4 + _sourcePsName.Length + 1 + _destinationPortal.Length + 1 +
-                     //2 + _parameters.Count * 2 +
+                     //2 + _inputParameters.Count * 2 +
                      2 + 2+ parsLengths +
                      2 + _results.Count * 2;
         stream.WriteByte((byte)'B');
@@ -72,9 +78,9 @@ public class BindMessage : PgwServerMessage
         stream.WriteByte(0);
         stream.WriteASCIIString(_sourcePsName);
         stream.WriteByte(0);
-        stream.WriteInt16((short)_parameters.Count);
+        stream.WriteInt16((short)_inputParameters.Count);
 
-        foreach (var pgwParameter in _parameters)
+        foreach (var pgwParameter in _inputParameters)
         {
             if (pgwParameter == null || pgwParameter.Value == null)
             {
@@ -99,8 +105,8 @@ public class BindMessage : PgwServerMessage
             }
 
         }
-        stream.WriteInt16((short)_parameters.Count);
-        foreach (var pgwParameter in _parameters)
+        stream.WriteInt16((short)_inputParameters.Count);
+        foreach (var pgwParameter in _inputParameters)
         {
             if (pgwParameter == null || pgwParameter.Value == null)
             {
@@ -136,23 +142,12 @@ public class BindMessage : PgwServerMessage
         stream.WriteInt16((short)_results.Count);
         foreach (var pgwParameter in _results)
         {
-            if (pgwParameter == null || pgwParameter.Value == null)
-            {
-                stream.WriteInt16(0);//Text
-            }
-            else if (pgwParameter.Value.GetType() == typeof(string))
-            {
-                stream.WriteInt16(0);//Text
-            }
-            else if (pgwParameter.Value.GetType() == typeof(byte[]))
+            if (pgwParameter.DbType == DbType.Binary ||
+                pgwParameter.DbType == DbType.Byte ||
+                pgwParameter.DbType == DbType.SByte)
             {
                 stream.WriteInt16(1);//Binary
-            }
-            else if (pgwParameter.Value.GetType() == typeof(char[]))
-            {
-                stream.WriteInt16(1);//Binary
-            }
-            else
+            }else
             {
                 stream.WriteInt16(0);//Text
             }

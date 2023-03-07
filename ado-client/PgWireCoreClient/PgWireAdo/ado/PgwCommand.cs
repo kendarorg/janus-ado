@@ -125,8 +125,12 @@ public class PgwCommand : DbCommand,IDisposable
     {
         if (_disposed) throw new ObjectDisposedException("DbCommand");
         var result = new PgwDataReader(DbConnection, this, _fields,behavior,this._lastExecuteRequest);
-        //result.PreLoadData();
-        
+        if (behavior == CommandBehavior.Default|| behavior == CommandBehavior.SequentialAccess)
+        {
+            //CallQuery();
+            //result.PreLoadData();
+        }
+
         return result;
     }
 
@@ -269,6 +273,7 @@ public class PgwCommand : DbCommand,IDisposable
         {
             var parsed = parametersCollection.Data[index];
             if (parsed.ParameterName == null) continue;
+            if (parsed.Direction == ParameterDirection.Output|| parsed.Direction == ParameterDirection.ReturnValue) continue;
             var namOpe = parsed.ParameterName;
             if(namOpe.StartsWith(":")|| namOpe.StartsWith("@")) namOpe = namOpe.Substring(1);
             var founded = parsedNamed.FindIndex(a => a == namOpe);
