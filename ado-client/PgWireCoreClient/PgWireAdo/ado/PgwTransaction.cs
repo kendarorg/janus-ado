@@ -16,11 +16,11 @@ public class PgwTransaction:DbTransaction
 
     public override void Commit()
     {
-        throw new NotImplementedException();
+        ((PgwConnection)DbConnection).Commit();
     }
 
     public override void Rollback()
     {
-        throw new NotImplementedException();
+        ((PgwConnection)DbConnection).Rollback();
     }
 }

@@ -21,7 +21,7 @@ namespace PgWireAdo.wire.server
             ConsoleOut.WriteLine("[SERVER] Read: QueryMessage " + _query);
             if (_query == null) throw new InvalidOperationException("Missing query");
             var query = EncodingUtils.GetUTF8(_query);
-            int length = 1 + 4 + query.Length+1;
+            int length = 1 + 4 + query.Length;
             stream.WriteByte((byte)'Q');
             stream.WriteInt32(length);
             stream.Write(query.Data);

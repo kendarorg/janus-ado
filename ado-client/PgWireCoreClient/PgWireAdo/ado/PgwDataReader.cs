@@ -55,7 +55,17 @@ public class PgwDataReader : DbDataReader
     public override int RecordsAffected { get; }
     public override bool HasRows
     {
-        get { return _rows!=null && _rows.Count>0; }
+        get
+        {
+            if (!_dataPreloaded)
+            {
+                _command.CallQuery();
+                _fields = _command.Fields;
+                PreLoadData();
+                _dataPreloaded = true;
+            }
+            return _rows!=null && _rows.Count>0;
+        }
     }
     public override bool IsClosed { get; }
 

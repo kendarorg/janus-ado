@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Transactions;
 using ConcurrentLinkedList;
 using PgWireAdo.utils;
 using PgWireAdo.wire;
@@ -29,19 +30,45 @@ public class PgwConnection : DbConnection
 
     public PgwConnection()
     {
-        
+
     }
 
-    private ConcurrentDictionary<Guid,DataMessage> inputQueue = new();
+    protected override DbTransaction BeginDbTransaction(System.Data.IsolationLevel isolationLevel)
+    {
+        var result = new PgwTransaction(this, isolationLevel);
+        _byteBuffer.Write(new QueryMessage("JANUS:BEGIN_TRANSACTION"));
+        var cc = _byteBuffer.WaitFor<CommandComplete>();
+        var rq = _byteBuffer.WaitFor<ReadyForQuery>();
+
+
+
+        return result;
+    }
+    public void Commit()
+    {
+        _byteBuffer.Write(new QueryMessage("JANUS:COMMIT_TRANSACTION"));
+        var cc = _byteBuffer.WaitFor<CommandComplete>();
+        var rq = _byteBuffer.WaitFor<ReadyForQuery>();
+    }
+
+    public void Rollback()
+    {
+        _byteBuffer.Write(new QueryMessage("JANUS:ROLLBACK_TRANSACTION"));
+        var cc = _byteBuffer.WaitFor<CommandComplete>();
+        var rq = _byteBuffer.WaitFor<ReadyForQuery>();
+
+    }
+
+    private ConcurrentDictionary<Guid, DataMessage> inputQueue = new();
     private Thread _queueThread;
 
-    public ConcurrentDictionary<Guid,DataMessage> InputQueue { get { return inputQueue; } }
+    public ConcurrentDictionary<Guid, DataMessage> InputQueue { get { return inputQueue; } }
 
 
 
     public override void Open()
     {
-        
+
         _tcpClient = new TcpClient(_options.DataSource, _options.Port);
         /*_tcpClient.ReceiveTimeout = 2000;
         _tcpClient.SendTimeout = 2000;
@@ -51,23 +78,23 @@ public class PgwConnection : DbConnection
         //_tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
         */
         _byteBuffer = new PgwByteBuffer(_tcpClient, this);
-        
+
 
         _queueThread = new Thread(() =>
         {
-            
+
             ReadDataFromStream(_byteBuffer);
         });
         _queueThread.Start();
         Task.Delay(10).Wait();
         _byteBuffer.Write(new SSLNegotation());
         var response = _byteBuffer.WaitFor<SSLResponse>();
-        
-         var parameters = new Dictionary<String, String>();
-         parameters.Add("database", Database);
-         var startup = new StartupMessage(parameters);
-         _byteBuffer.Write(startup);
-         _state = ConnectionState.Open;
+
+        var parameters = new Dictionary<String, String>();
+        parameters.Add("database", Database);
+        var startup = new StartupMessage(parameters);
+        _byteBuffer.Write(startup);
+        _state = ConnectionState.Open;
     }
 
 
@@ -88,7 +115,8 @@ public class PgwConnection : DbConnection
         if (_state != ConnectionState.Closed)
         {
             _state = ConnectionState.Closed;
-            if(_client!=null) { 
+            if (_client != null)
+            {
                 _client.Dispose();
             }
 
@@ -96,13 +124,14 @@ public class PgwConnection : DbConnection
             {
                 _tcpClient.Dispose();
             }
-            
+
         }
 
         base.Dispose(disposing);
     }
 
-    public override string ConnectionString {
+    public override string ConnectionString
+    {
         get { return _connectionString; }
         set
         {
@@ -119,13 +148,13 @@ public class PgwConnection : DbConnection
     public override ConnectionState State => _state;
     public override string DataSource => _options.DataSource;
     public override string ServerVersion => _options.ServerVersion;
-    
+
 
 
     public override void Close()
     {
         _state = ConnectionState.Closed;
-        
+
         _byteBuffer.WriteSync(new TerminateMessage());
         _state = ConnectionState.Closed;
         if (_client != null)
@@ -155,17 +184,7 @@ public class PgwConnection : DbConnection
 
     #region TOIMPLEMENT
 
-    protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
-    {
-        var result= new PgwTransaction(this, isolationLevel);
-        _byteBuffer.Write(new QueryMessage("JANUS:BEGIN_TRANSACTION"));
-        var cc = _byteBuffer.WaitFor<CommandComplete>();
-        var rq = _byteBuffer.WaitFor<ReadyForQuery>();
 
-        
-        
-        return result;
-    }
 
     public override void ChangeDatabase(string databaseName)
     {
@@ -199,6 +218,7 @@ public class PgwConnection : DbConnection
     }
 
     public bool Running { get { return _running; } }
+
     private void ReadDataFromStream(PgwByteBuffer buffer)
     {
         try
@@ -217,7 +237,7 @@ public class PgwConnection : DbConnection
                 {
                     sslNegotiationDone = true;
                     var sslN = new DataMessage((char)messageType, 0, new byte[0], timestamp++);
-                    inputQueue.AddOrUpdate(sslN.Id,sslN,(g,d)=> sslN);
+                    inputQueue.AddOrUpdate(sslN.Id, sslN, (g, d) => sslN);
                     continue;
                 }
 
@@ -237,10 +257,12 @@ public class PgwConnection : DbConnection
             _running = false;
             if (_tcpClient != null)
             {
-            _tcpClient.Close();
-            _tcpClient=null;
+                _tcpClient.Close();
+                _tcpClient = null;
+            }
         }
     }
-}
+
+    
 }
 
