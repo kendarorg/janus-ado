@@ -133,7 +133,7 @@ public class PgwSocketHandler implements Runnable, Context {
         }
     }
 
-    private static void sleep(long millis){
+    public static void sleep(long millis){
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
@@ -146,7 +146,7 @@ public class PgwSocketHandler implements Runnable, Context {
             try {
                 var item = inputQueue.poll();
                 if (item == null) {
-                    sleep(10);
+                    sleep(3);
                     continue;
                 }
                 PgwFlowMessage message = null;
@@ -208,7 +208,7 @@ public class PgwSocketHandler implements Runnable, Context {
             if(after>now){
                 throw new SQLException("Unable to find "+s+" message");
             }
-            if(dm==null)sleep(10);
+            if(dm==null)sleep(3);
         }
         if(dm!=null){
             System.out.println("[SERVER] Recv:* "+dm.getType());

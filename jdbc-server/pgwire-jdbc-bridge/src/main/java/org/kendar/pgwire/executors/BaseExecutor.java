@@ -33,6 +33,13 @@ public class BaseExecutor {
         fakeQueries.add("select oid, typbasetype from pg_type where typname = 'lo'".toLowerCase(Locale.ROOT));
         fakeQueries.add("select nspname from pg_namespace".toLowerCase(Locale.ROOT));
         fakeQueries.add("select n.nspname, c.relname, a.attname, a.atttypid".toLowerCase(Locale.ROOT));
+        fakeQueries.add("set client_encoding".toLowerCase(Locale.ROOT));
+        fakeQueries.add("set statement_timeout".toLowerCase(Locale.ROOT));
+        fakeQueries.add("select current_schema()".toLowerCase(Locale.ROOT));
+
+
+
+
         //fakeQueries.add("SET statement_timeout = 0".toLowerCase(Locale.ROOT));
 
 
@@ -142,20 +149,20 @@ public class BaseExecutor {
         conn.commit();
         context.setTransaction(false);
         conn.setAutoCommit(true);
-        context.getBuffer().write(new CommandComplete("RESULT 0"));
+        context.getBuffer().write(new CommandComplete("COMMIT"));
     }
 
     protected void rollbackTransaction(Context context, Connection conn) throws SQLException, IOException {
         conn.rollback();
         context.setTransaction(false);
         conn.setAutoCommit(true);
-        context.getBuffer().write(new CommandComplete("RESULT 0"));
+        context.getBuffer().write(new CommandComplete("ROLLBACK"));
     }
 
     protected void beginTransaction(Context context, Connection conn) throws SQLException, IOException {
         if (conn.getAutoCommit()) conn.setAutoCommit(false);
         context.setTransaction(true);
-        context.getBuffer().write(new CommandComplete("RESULT 0"));
+        context.getBuffer().write(new CommandComplete("UPDATE 0"));
     }
 
 
@@ -184,7 +191,11 @@ public class BaseExecutor {
                 query = query.substring("BEGIN;".length());
             }
         }else if (query.equalsIgnoreCase("COMMIT")) {
-            commitTransaction(context, conn);
+            if(context.inTransaction()) {
+                commitTransaction(context, conn);
+            }else{
+                context.getBuffer().write(new CommandComplete("COMMIT"));
+            }
             //context.getBuffer().write(new ReadyForQuery(context.inTransaction()));
             return null;
         }else if (query.startsWith("SAVEPOINT ")&&query.indexOf(';')>0){

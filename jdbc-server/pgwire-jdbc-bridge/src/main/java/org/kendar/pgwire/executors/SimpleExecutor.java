@@ -1,5 +1,6 @@
 package org.kendar.pgwire.executors;
 
+import org.kendar.pgwire.PgwSocketHandler;
 import org.kendar.pgwire.commons.Context;
 import org.kendar.pgwire.flow.BindMessage;
 import org.kendar.pgwire.flow.ParseMessage;
@@ -27,7 +28,7 @@ public class SimpleExecutor extends BaseExecutor{
             return;
         }
 
-        if (fakeQueries.stream().anyMatch(a -> query.toLowerCase(Locale.ROOT).startsWith(a))) {
+        if (fakeQueries.stream().anyMatch(a -> query.toLowerCase(Locale.ROOT).contains(a))) {
 
             if(query.equalsIgnoreCase("select oid, typbasetype from pg_type where typname = 'lo'")){
                 handleOdbcStartQuery(context);
@@ -35,11 +36,13 @@ public class SimpleExecutor extends BaseExecutor{
                 handleSelectSpName(context);
             }else if(query.contains("select n.nspname, c.relname, a.attname, a.atttypid")){
                 handleHuge(context);
+            }else if(query.contains("select current_schema()")){
+                handleSelectSpName(context);
             }else {
                 try {
                     handleExecuteRequest(context, query);
                 } catch (Exception ex) {
-                    if (query.toLowerCase(Locale.ROOT).startsWith("select")) {
+                    if (query.toLowerCase(Locale.ROOT).startsWith("select")||query.toLowerCase(Locale.ROOT).startsWith("set ")) {
                         context.getBuffer().write(new CommandComplete("SELECT 0 0"));
                     }else{
                         context.getBuffer().write(new CommandComplete("RESULT 0"));
@@ -52,6 +55,7 @@ public class SimpleExecutor extends BaseExecutor{
             context.getBuffer().write(new ReadyForQuery(context.inTransaction()));
         }
     }
+
 
     private void handleHuge(Context context) throws IOException {
         context.getBuffer().write(new CommandComplete("SELECT 0"));

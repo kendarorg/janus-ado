@@ -164,7 +164,7 @@ INSERT INTO csharptest(data, accessed) VALUES('Rows: 3', now());
         {
             string szConnect = "DSN=localpostgres;" +
                                "UID=postgres;" +
-                               "PWD=postgres;CommLog=1";
+                               "PWD=postgres;COMMANDTIMEOUT=20;";
             OdbcConnection conn = new OdbcConnection(szConnect);
 
             conn.Open();
@@ -178,9 +178,8 @@ INSERT INTO csharptest(data, accessed) VALUES('Rows: 3', now());
                 .ExecuteNonQuery();
 
 
-            conn = new OdbcConnection(szConnect);
-            conn.Open();
-            using (OdbcCommand cmd = conn.CreateCommand())
+
+            OdbcCommand cmd = conn.CreateCommand();
             {
                 var transaction = conn.BeginTransaction();
                 
@@ -195,14 +194,14 @@ INSERT INTO csharptest(data, accessed) VALUES('Rows: 3', now());
                 transaction.Commit();
             
             }
-
-            conn = new OdbcConnection(szConnect);
-            conn.Open();
+            //conn = new OdbcConnection(szConnect);
+            //conn.Open();
             DataSet dsDB = new DataSet();
             OdbcDataAdapter adDB = new OdbcDataAdapter();
-            OdbcCommandBuilder cbDB = new OdbcCommandBuilder(adDB);
 
 
+            conn = new OdbcConnection(szConnect);
+conn.Open();
             var sel = new OdbcCommand(
                 "SELECT id, data, accessed FROM csharptest",
                 conn);

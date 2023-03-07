@@ -23,6 +23,8 @@ In the future
 
 For testing it, first install (if you are interested) the Postgres SQL ODBC driver
 
+On the properties of the ODBC driver, set "Parse statements" to false
+
 ### Jdbc
 
 * Just open the jdbc-server project and run the relevant tests
