@@ -94,10 +94,10 @@ public class PgwSocketHandler implements Runnable, Context {
             var firstLength = buffer.readInt32();
             if(firstLength==8) {
                 buffer.read(new SSLNegotation(firstLength));
-                var startup = new StartupMessage(pidCounter.incrementAndGet(), -1);
+                var startup = new StartupMessage(pidCounter.incrementAndGet(), -1,this);
                 buffer.read(startup);
             }else{
-                var startup = new StartupMessage(pidCounter.incrementAndGet(),firstLength);
+                var startup = new StartupMessage(pidCounter.incrementAndGet(),firstLength,this);
                 buffer.read(startup);
             }
             while(running.get()){
@@ -228,6 +228,16 @@ public class PgwSocketHandler implements Runnable, Context {
         } catch (Exception e) {
 
         }
+    }
+    private boolean janus=false;
+    @Override
+    public void setJanus(boolean janus) {
+        this.janus = janus;
+    }
+
+    @Override
+    public boolean isJanus() {
+        return janus;
     }
 }
 

@@ -2,6 +2,7 @@
 using System.Data;
 using System.Data.Common;
 using System.IO;
+using System.Numerics;
 using PgWireAdo.utils;
 using PgWireAdo.utils.parse;
 using PgWireAdo.wire.client;
@@ -329,6 +330,18 @@ public class PgwDataReader : DbDataReader
 
     override public T GetFieldValue<T>(int ordinal)
     {
-        return (T)GetValue(ordinal).As<T>().Value;
+        var value = GetValue(ordinal);
+        if (value == null) return default(T);
+        var conversionResult = value.As<T>();
+        if (!conversionResult.HasValue)
+        {
+            if (typeof(T) == typeof(BigInteger))
+            {
+                var valString = value.As<String>();
+                return (T)(object)PgwConverter.ParseExtendedBigInteger(valString.Value);
+            }
+            throw new Exception("Invalid conversion to " + typeof(T) + " of " + value+" from "+value.GetType().Name);
+        }
+        return (T)conversionResult.Value;
     }
 }

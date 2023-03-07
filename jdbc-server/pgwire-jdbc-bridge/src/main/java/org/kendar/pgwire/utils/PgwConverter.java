@@ -59,6 +59,8 @@ public class PgwConverter {
                 return o;
             case("float"):
                 return ByteBuffer.wrap(o).getFloat();
+            case("string"):
+                return new String(o);
             case("double"):
                 return ByteBuffer.wrap(o).getDouble();
             case("int"):

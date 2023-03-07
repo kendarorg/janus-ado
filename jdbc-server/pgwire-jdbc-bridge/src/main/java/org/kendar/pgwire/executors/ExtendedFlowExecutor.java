@@ -7,15 +7,13 @@ import org.kendar.pgwire.flow.SyncMessage;
 import org.kendar.pgwire.server.CommandComplete;
 import org.kendar.pgwire.server.EmptyQueryResponse;
 import org.kendar.pgwire.server.ErrorResponse;
+import org.kendar.pgwire.server.ReadyForQuery;
 import org.kendar.pgwire.utils.PgwConverter;
 import org.kendar.pgwire.utils.SqlParseResult;
 import org.kendar.pgwire.utils.StringParser;
 
 import java.io.IOException;
-import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -105,9 +103,13 @@ public class ExtendedFlowExecutor extends BaseExecutor {
 
     private void handleExecuteRequest(Context context, String statementName, BindMessage bind,
                                       ParseMessage statement,String portal) throws SQLException, IOException {
-        var parsed = StringParser.getTypes(statement.getQuery());
+        var conn = context.getConnection();
+        var query = statement.getQuery();
+        query = handleOdbcTransactions(context, conn, query);
+        if(query==null)return;
+        var parsed = StringParser.getTypes(query);
         if (!shouldHandleAsSingleQuery(parsed)) {
-            var conn = context.getConnection();
+
             if(!context.inTransaction()) {
                 conn.setAutoCommit(false);
                 context.setTransaction(true);
@@ -128,15 +130,17 @@ public class ExtendedFlowExecutor extends BaseExecutor {
         }
     }
 
-    private void handleSingleQuery(Context context, BindMessage bind, String portal, SqlParseResult singleParsed) throws SQLException {
+    private void handleSingleQuery(Context context, BindMessage bind, String portal, SqlParseResult singleParsed) throws SQLException, IOException {
         boolean result;
         var singleQuery = singleParsed.getValue();
         var type = singleParsed.getType();
         var conn = context.getConnection();
-        if (singleQuery.startsWith("JANUS:")) {
+
+        if (singleQuery.startsWith("JANUS:") && context.isJanus()) {
             handleSpecialQuery(context,conn, singleQuery);
             return;
         }
+
         Statement st;
         context.put("connection_"  + portal, conn);
         if (hasBind(bind)) {

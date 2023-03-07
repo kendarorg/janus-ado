@@ -461,10 +461,10 @@ public class CommandTests : TestBase
         cmd.Parameters.Add(new NpgsqlParameter<char[]>("p4", new[] { 'f', 'o', 'o' }));
         using var reader = await cmd.ExecuteReaderAsync();
         reader.Read();
+        Assert.That(reader.GetString(3), Is.EqualTo("foo"));
         Assert.That(reader.GetInt32(0), Is.EqualTo(8));
         Assert.That(reader.GetInt32(1), Is.EqualTo(8));
         Assert.That(reader.GetString(2), Is.EqualTo("hello"));
-        Assert.That(reader.GetString(3), Is.EqualTo("foo"));
     }
 
     #endregion Parameters

@@ -1,6 +1,7 @@
 ﻿using System.Buffers.Binary;
 using System.ComponentModel;
 using System.Data;
+using System.Numerics;
 using PgWireAdo.ado;
 using PgWireAdo.wire.client;
 using TB.ComponentModel;
@@ -24,6 +25,7 @@ namespace PgWireAdo.utils
                     case (DbType.Int64): return TypesOids.Int8;
                     case (DbType.Binary): return TypesOids.Bytea;
                     case (DbType.Decimal): return TypesOids.Numeric;
+                    case (DbType.VarNumeric): return TypesOids.Numeric;
                     default:
                         throw new Exception("Missing type "+type);
                 }
@@ -61,6 +63,7 @@ namespace PgWireAdo.utils
             typeMap[typeof(Decimal)] = DbType.Decimal;
             typeMap[typeof(Byte)] = DbType.Byte;
             typeMap[typeof(TimeSpan)] = DbType.Time;
+            typeMap[typeof(BigInteger)] = DbType.VarNumeric;
         }
         public static DbType ConvertToDbType(Object? val)
         {
@@ -158,6 +161,35 @@ namespace PgWireAdo.utils
             }
 
             throw new NotImplementedException(v.GetType().Name);
+        }
+
+        public static (decimal multiplier, int exponent) Decompose(string value)
+        {
+            var split = value.ToLower().Split('e');
+            if (split.Length == 1)
+            {
+                return (decimal.Parse(split[0]),0);
+            }
+            return (decimal.Parse(split[0]), int.Parse(split[1]));
+        }
+        public static int GetDecimalPlaces(decimal value)
+            => BitConverter.GetBytes(decimal.GetBits(value)[3])[2];
+
+        public static BigInteger ParseExtendedBigInteger(string value)
+        {
+            try
+            {
+                var (multiplier, exponent) = Decompose(value);
+
+                var decimalPlaces = GetDecimalPlaces(multiplier);
+                var power = (long)Math.Pow(10, decimalPlaces);
+
+                return (BigInteger.Pow(10, exponent) * (long)(multiplier * power)) / power;
+            }
+            catch (Exception e)
+            {
+                return value.As<BigInteger>().Value;
+            }
         }
     }
 }

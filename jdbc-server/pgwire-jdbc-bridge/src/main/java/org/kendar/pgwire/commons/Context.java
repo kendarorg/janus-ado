@@ -18,4 +18,7 @@ public interface Context {
     DataMessage waitFor(char s) throws SQLException;
 
     void close();
+
+    void setJanus(boolean janus);
+    boolean isJanus();
 }

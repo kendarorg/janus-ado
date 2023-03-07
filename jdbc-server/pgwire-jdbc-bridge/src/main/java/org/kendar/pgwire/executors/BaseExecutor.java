@@ -33,6 +33,8 @@ public class BaseExecutor {
         fakeQueries.add("select oid, typbasetype from pg_type where typname = 'lo'".toLowerCase(Locale.ROOT));
         fakeQueries.add("select nspname from pg_namespace".toLowerCase(Locale.ROOT));
         fakeQueries.add("select n.nspname, c.relname, a.attname, a.atttypid".toLowerCase(Locale.ROOT));
+        //fakeQueries.add("SET statement_timeout = 0".toLowerCase(Locale.ROOT));
+
 
 
     }
@@ -90,22 +92,14 @@ public class BaseExecutor {
     protected void handleSpecialQuery(Context context, Connection conn, String query) throws SQLException {
         try {
             if (query.equalsIgnoreCase("JANUS:BEGIN_TRANSACTION")) {
-                if (conn.getAutoCommit()) conn.setAutoCommit(false);
-                context.setTransaction(true);
-                context.getBuffer().write(new CommandComplete("RESULT 0"));
+                beginTransaction(context, conn);
                 //context.getBuffer().write(new ReadyForQuery(true));
 
             } else if (query.equalsIgnoreCase("JANUS:ROLLBACK_TRANSACTION")) {
-                conn.rollback();
-                context.setTransaction(false);
-                conn.setAutoCommit(true);
-                context.getBuffer().write(new CommandComplete("RESULT 0"));
+                rollbackTransaction(context, conn);
                 //context.getBuffer().write(new ReadyForQuery(false));
             } else if (query.equalsIgnoreCase("JANUS:COMMIT_TRANSACTION")) {
-                conn.commit();
-                context.setTransaction(false);
-                conn.setAutoCommit(true);
-                context.getBuffer().write(new CommandComplete("RESULT 0"));
+                commitTransaction(context, conn);
                 //context.getBuffer().write(new ReadyForQuery(false));
             } else if (query.startsWith("JANUS:SET_SAVEPOINT:")) {
                 var val = query.split(":");
@@ -144,6 +138,25 @@ public class BaseExecutor {
         }
     }
 
+    protected void commitTransaction(Context context, Connection conn) throws SQLException, IOException {
+        conn.commit();
+        context.setTransaction(false);
+        conn.setAutoCommit(true);
+        context.getBuffer().write(new CommandComplete("RESULT 0"));
+    }
+
+    protected void rollbackTransaction(Context context, Connection conn) throws SQLException, IOException {
+        conn.rollback();
+        context.setTransaction(false);
+        conn.setAutoCommit(true);
+        context.getBuffer().write(new CommandComplete("RESULT 0"));
+    }
+
+    protected void beginTransaction(Context context, Connection conn) throws SQLException, IOException {
+        if (conn.getAutoCommit()) conn.setAutoCommit(false);
+        context.setTransaction(true);
+        context.getBuffer().write(new CommandComplete("RESULT 0"));
+    }
 
 
     private static Savepoint getSavepoint(Context client, String[] val) {
@@ -154,4 +167,30 @@ public class BaseExecutor {
         }
     }
 
+
+    protected String handleOdbcTransactions(Context context, Connection conn, String query) throws SQLException, IOException {
+        if(context.isJanus()){
+            return query;
+        }
+        if (query.startsWith("BEGIN;") && query.length()>"BEGIN;".length()) {
+            //To handle odbc
+            if(!context.inTransaction()) {
+                //conn.commit();
+                beginTransaction(context, conn);
+                context.getBuffer().write(new ReadyForQuery(context.inTransaction()));
+                query = query.substring("BEGIN;".length());
+                System.out.println("[SERVER] ODBC Transaction begin");
+            }else{
+                query = query.substring("BEGIN;".length());
+            }
+        }else if (query.equalsIgnoreCase("COMMIT")) {
+            commitTransaction(context, conn);
+            //context.getBuffer().write(new ReadyForQuery(context.inTransaction()));
+            return null;
+        }else if (query.startsWith("SAVEPOINT ")&&query.indexOf(';')>0){
+            var index = query.indexOf(';');
+            query = query.substring(index+1);
+        }
+        return query;
+    }
 }

@@ -117,9 +117,13 @@ public class SimpleExecutor extends BaseExecutor{
     }
 
     private void handleExecuteRequest(Context context, String query) throws SQLException, IOException {
+
+        var conn = context.getConnection();
+
+        query = handleOdbcTransactions(context, conn, query);
+        if(query==null)return;
         var parsed = StringParser.getTypes(query);
         if (!shouldHandleAsSingleQuery(parsed)) {
-            var conn = context.getConnection();
 
             if(!context.inTransaction()) {
                 conn.setAutoCommit(false);
@@ -146,7 +150,10 @@ public class SimpleExecutor extends BaseExecutor{
         var singleQuery = singleParsed.getValue();
         var type = singleParsed.getType();
         var conn = context.getConnection();
-        if (singleQuery.startsWith("JANUS:")) {
+
+
+
+        if (singleQuery.startsWith("JANUS:") && context.isJanus()) {
             handleSpecialQuery(context,conn, singleQuery);
             return;
         }

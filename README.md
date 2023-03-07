@@ -70,8 +70,8 @@ And then in the prompt
 * Batched queries are allowed only through use multiple statements
 * The flow starts with the SSLNegotiation
 
-### ADO
+### ADO, my implementation
 
 * Named parameters are only a convention
-* The "old stile batched queries" are now deprecated
+* The "old stile batched queries" are now deprecated but they "mostly" works
 

@@ -92,6 +92,7 @@ public class PgwConnection : DbConnection
 
         var parameters = new Dictionary<String, String>();
         parameters.Add("database", Database);
+        parameters.Add("janus","janus");
         var startup = new StartupMessage(parameters);
         _byteBuffer.Write(startup);
         _state = ConnectionState.Open;

@@ -1,5 +1,6 @@
 package org.kendar.pgwire.initialize;
 
+import org.kendar.pgwire.commons.Context;
 import org.kendar.pgwire.commons.PgwByteBuffer;
 import org.kendar.pgwire.server.AuthenticationOk;
 import org.kendar.pgwire.server.BackendKeyData;
@@ -12,12 +13,14 @@ import java.util.Map;
 
 public class StartupMessage implements PgwClientMessage{
     private final int length;
+    private Context context;
     private Map<String, String> parameters;
     private int pid;
 
-    public StartupMessage(int pid, int firstLength) {
+    public StartupMessage(int pid, int firstLength, Context context) {
         this.pid = pid;
         this.length = firstLength;
+        this.context = context;
     }
 
     @Override
@@ -32,7 +35,9 @@ public class StartupMessage implements PgwClientMessage{
         for(var j=0;j<flatMap.size()-1;j+=2){
             parameters.put(flatMap.get(j),flatMap.get(j+1));
         }
-
+        if(parameters.containsKey("janus")){
+            context.setJanus(true);
+        }
         buffer.write(new AuthenticationOk());
         buffer.write(new ParameterStatus("server_version","15"));
         buffer.write(new ParameterStatus("server_type","JANUS"));
