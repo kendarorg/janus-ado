@@ -257,6 +257,7 @@ public class PgwCommand : DbCommand,IDisposable
     {
 
         if (_disposed) throw new ObjectDisposedException("DbCommand");
+        
         var stream = ((PgwConnection)DbConnection).Stream;
         if (stream == null) throw new InvalidOperationException();
         if (CommandType == CommandType.TableDirect)

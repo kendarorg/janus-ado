@@ -11,8 +11,34 @@ public class PgwParameterCollection: DbParameterCollection
     public List<DbParameter> Data=> _data;
     public override int Add(object value)
     {
+        if (value==null)
+        {
+            throw new ArgumentNullException();
+        }
+        if (typeof(PgwParameter)!=value.GetType() && !value.GetType().IsSubclassOf(typeof(PgwParameter)))
+        {
+            throw new InvalidCastException();
+        }
         _data.Add((DbParameter)value);
         return _data.Count;
+    }
+
+    public override void Insert(int index, object value)
+    {
+        
+        while (_data.Count <= index)
+        {
+            _data.Add(null);
+        }
+        if (typeof(PgwParameter) == value.GetType() || value.GetType().IsSubclassOf(typeof(PgwParameter)))
+        {
+            _data.Insert(index, (PgwParameter)value);
+        }
+        else
+        {
+            _data.Insert(index, new PgwParameter(value));
+        }
+        
     }
 
     public override void Clear()
@@ -20,11 +46,20 @@ public class PgwParameterCollection: DbParameterCollection
         _data.Clear();
     }
 
-    new DbParameter this[String i]
+    /*new DbParameter this[String i]
     {
         get { return GetParameter(i); }
-        set { SetParameter(i,value); }
-    }
+        set
+        {
+            throw new InvalidOperationException();
+            if (!EqualStr(value.ParameterName,i))
+            {
+                throw new ArgumentException();
+            }
+            SetParameter(i,value);
+        }
+    }*/
+
 
     public override bool Contains(object value)
     {
@@ -34,22 +69,45 @@ public class PgwParameterCollection: DbParameterCollection
 
     public override int IndexOf(object value)
     {
-        var idx = _data.FindIndex(a => value.Equals(a.Value));
-        return idx;
+        if (value is PgwParameter)
+        {
+            var idx = _data.FindIndex(a => value.Equals(a.Value));
+            return idx;
+        }
+        else
+        {
+            return IndexOf((String)value);
+        }
     }
 
-    public override void Insert(int index, object value)
+    private String CleanString(String parameterName)
     {
-        while (_data.Count <= index)
+        if (parameterName.StartsWith(":") || parameterName.StartsWith("@") || parameterName.StartsWith("$"))
         {
-            _data.Add(null);
+            parameterName = parameterName.Substring(1);
         }
-        _data.Insert(index, new PgwParameter(value));
+        return parameterName;
     }
+
+    private bool EqualStr(String first,String second)
+    {
+        first = CleanString(first).ToLowerInvariant();
+        second = CleanString(second).ToLowerInvariant();
+        return first == second;
+    }
+
+    public override int IndexOf(string parameterName)
+    {
+        var idx = _data.FindIndex(a =>
+                EqualStr(parameterName,a.ParameterName));
+            return idx;
+    }
+
+    
 
     public override void Remove(object value)
     {
-        var idx = _data.FindIndex(a => value.Equals(a.Value));
+        var idx = _data.FindIndex(a => value.Equals(a));
         _data.RemoveAt(idx);
     }
 
@@ -60,7 +118,7 @@ public class PgwParameterCollection: DbParameterCollection
 
     public override void RemoveAt(string parameterName)
     {
-        var idx = _data.FindIndex(a => a.ParameterName!=null && a.ParameterName == parameterName);
+        var idx = _data.FindIndex(a => EqualStr(a.ParameterName,parameterName));
         if (idx != -1)
         {
             _data.RemoveAt(idx);
@@ -78,7 +136,11 @@ public class PgwParameterCollection: DbParameterCollection
 
     protected override void SetParameter(string parameterName, DbParameter value)
     {
-        var idx = _data.FindIndex(a => a.ParameterName != null && a.ParameterName == parameterName);
+        if (!EqualStr(value.ParameterName, parameterName))
+        {
+            throw new ArgumentException();
+        }
+        var idx = _data.FindIndex(a =>EqualStr(a.ParameterName,parameterName));
         if (idx != -1)
         {
             _data[idx]=value;
@@ -88,14 +150,11 @@ public class PgwParameterCollection: DbParameterCollection
     public override int Count => _data.Count;
     public override object SyncRoot => _syncRoot;
 
-    public override int IndexOf(string parameterName)
-    {
-        return _data.FindIndex(a => a.ParameterName != null && a.ParameterName == parameterName);
-    }
+    
 
     public override bool Contains(string value)
     {
-        return _data.FindIndex(a => a.ParameterName != null && a.ParameterName == value)>=0;
+        return _data.FindIndex(a =>EqualStr( a.ParameterName, value))>=0;
     }
 
     public override void CopyTo(Array array, int index)
@@ -115,13 +174,7 @@ public class PgwParameterCollection: DbParameterCollection
 
     protected override DbParameter GetParameter(string parameterName)
     {
-        if (parameterName.StartsWith(":") || parameterName.StartsWith("@"))
-        {
-            parameterName = parameterName.Substring(1);
-        }
-        return _data.Find(a => parameterName ==a.ParameterName ||
-                               ":" + parameterName == a.ParameterName ||
-                               "@" + parameterName == a.ParameterName);
+        return _data.Find(a => EqualStr(parameterName,a.ParameterName));
     }
 
     public override void AddRange(Array values)

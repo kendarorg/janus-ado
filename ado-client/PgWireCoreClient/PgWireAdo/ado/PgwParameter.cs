@@ -22,6 +22,25 @@ namespace PgWireAdo.ado
     }
     public class PgwParameter:DbParameter
     {
+        protected bool Equals(PgwParameter other)
+        {
+            return Equals(_value, other._value) && DbType == other.DbType && Direction == other.Direction && IsNullable == other.IsNullable && ParameterName == other.ParameterName && SourceColumn == other.SourceColumn && SourceColumnNullMapping == other.SourceColumnNullMapping && Size == other.Size;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((PgwParameter)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(_value, (int)DbType, (int)Direction, IsNullable, ParameterName, SourceColumn, SourceColumnNullMapping, Size);
+        }
+
+
         private object? _value;
 
         public PgwParameter(string parameterName, DbType dbType)

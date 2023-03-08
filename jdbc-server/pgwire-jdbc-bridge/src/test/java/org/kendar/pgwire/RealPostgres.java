@@ -10,7 +10,7 @@ import java.sql.SQLException;
 public class RealPostgres {
     public static final String POSTGRES_REAL_CONNECTION_STRING = "jdbc:postgresql://localhost:5432/postgres?user=postgres&password=postgres&ssl=false";
 
-    @Test
+    //@Test
     public void realPostgresTest() throws SQLException {
         Connection conn = DriverManager.getConnection(POSTGRES_REAL_CONNECTION_STRING);
         var st = conn.createStatement();
