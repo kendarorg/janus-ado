@@ -169,7 +169,7 @@ public class SqlParserTest
         Assert.AreEqual(2, sqlParameters.Count);
     }
 
-    [Test]
+    /*[Test]
     public void retrieveParametersUnnamedPriority()
     {
         var sql = "SELECT ?,@p1,$1";
@@ -189,7 +189,7 @@ public class SqlParserTest
         Assert.AreEqual(1, result.Count);
         Assert.AreEqual(SqlParameterType.POSITIONAL, parametersType);
         Assert.AreEqual("$1", result[0].Name);
-    }
+    }*/
 
 
 

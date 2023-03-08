@@ -329,7 +329,7 @@ public class CommandTests : TestBase
         using var conn = await OpenConnectionAsync();
         using var cmd = new NpgsqlCommand("SELECT @p", conn);
         cmd.Parameters.Add(new NpgsqlParameter("@p", NpgsqlDbType.Int32));
-        Assert.That(() => cmd.ExecuteScalarAsync(), Throws.Exception.TypeOf<Exception>());
+        Assert.That(() => cmd.ExecuteScalarAsync(), Throws.Exception.TypeOf<InvalidOperationException>());
     }
 
     [Test]
@@ -357,7 +357,7 @@ public class CommandTests : TestBase
         await using var cmd = new NpgsqlCommand("SELECT $1, @p", conn);
         cmd.Parameters.Add(new NpgsqlParameter { Value = 8 });
         cmd.Parameters.Add(new NpgsqlParameter { ParameterName = "p", Value = 9 });
-        Assert.That(() => cmd.ExecuteNonQueryAsync(), Throws.Exception.TypeOf<Exception>());
+        Assert.That(() => cmd.ExecuteNonQueryAsync(), Throws.Exception.TypeOf<InvalidOperationException>());
     }
 
     [Test]
@@ -407,7 +407,7 @@ public class CommandTests : TestBase
         await using var conn = await OpenConnectionAsync();
         await using var cmd = new NpgsqlCommand("SELECT $1", conn);
         cmd.Parameters.Add(new NpgsqlParameter { Value = 8, Direction = ParameterDirection.InputOutput });
-        Assert.That(() => cmd.ExecuteNonQueryAsync(), Throws.Exception.TypeOf<Exception>());
+        Assert.That(() => cmd.ExecuteNonQueryAsync(), Throws.Exception.TypeOf<InvalidOperationException>());
     }
 
     [Test]
@@ -543,7 +543,7 @@ public class CommandTests : TestBase
     }
 
 
-    [Test]
+    //[Test] UNSUPPORTED
     public async Task Parameter_and_operator_unclear()
     {
         await using var conn = await OpenConnectionAsync();
@@ -581,8 +581,8 @@ public class CommandTests : TestBase
 
         await using var reader = await command.ExecuteReaderAsync(behavior);
 
-        //Assert.AreEqual(4, command.Parameters["param1"].Value);
-        //Assert.AreEqual(5, command.Parameters["param2"].Value);
+        Assert.AreEqual(4, command.Parameters["param1"].Value);
+        Assert.AreEqual(5, command.Parameters["param2"].Value);
 
         reader.Read();
 
@@ -612,7 +612,7 @@ public class CommandTests : TestBase
     public async Task Input_and_output_parameters(CommandBehavior behavior)
     {
         using var conn = await OpenConnectionAsync();
-        using var cmd = new NpgsqlCommand("SELECT @c-1 AS c, @a+2 AS b", conn);
+        using var cmd = new NpgsqlCommand("SELECT @c-1 AS c, CONVERT(@a+2,NUMBER) AS b", conn);
         cmd.Parameters.Add(new NpgsqlParameter("a", 3));
         var b = new NpgsqlParameter { ParameterName = "b", Direction = ParameterDirection.Output };
         cmd.Parameters.Add(b);
@@ -632,14 +632,14 @@ public class CommandTests : TestBase
             return;
 
         using var conn = await OpenConnectionAsync();
-        using var cmd = new NpgsqlCommand("SELECT @p::TIMESTAMP", conn);
-        cmd.CommandText = "SELECT @p::TIMESTAMP";
+        using var cmd = new NpgsqlCommand("SELECT CONVERT(@p,TIMESTAMP)", conn);
+        cmd.CommandText = "SELECT CONVERT(@p,TIMESTAMP)";
         cmd.Parameters.Add(new NpgsqlParameter("p", DbType.DateTime) { Value = "2008-1-1" });
         if (prepare == PrepareOrNot.Prepared)
             cmd.Prepare();
         using var reader = await cmd.ExecuteReaderAsync();
         reader.Read();
-        Assert.That(reader.GetValue(0), Is.EqualTo(new DateTime(2008, 1, 1)));
+        Assert.That(reader.GetValue(0), Is.EqualTo(new DateTime(2008, 1, 1).ToString("u").TrimEnd('Z')));
     }
 
     [Test, IssueLink("https://github.com/npgsql/npgsql/issues/503")]

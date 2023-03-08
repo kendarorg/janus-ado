@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using PgWireAdo.utils;
 using PgWireAdo.utils.parse;
 using PgWireAdo.wire.client;
@@ -124,16 +125,40 @@ public class PgwCommand : DbCommand,IDisposable
     protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
     {
         if (_disposed) throw new ObjectDisposedException("DbCommand");
+        var parameters = (PgwParameterCollection)DbParameterCollection;
+        var outParameters = parameters.Data.FindAll(p =>
+            p.Direction == ParameterDirection.Output || p.Direction == ParameterDirection.InputOutput);
+        
         var result = new PgwDataReader(DbConnection, this, _fields,behavior,this._lastExecuteRequest);
-        if (behavior == CommandBehavior.Default|| behavior == CommandBehavior.SequentialAccess)
-        {
-            //CallQuery();
-            //result.PreLoadData();
-        }
+        HandleOutParameters(outParameters, result);
+
 
         return result;
     }
 
+    private void HandleOutParameters(List<DbParameter> outParameters, PgwDataReader result)
+    {
+        if (outParameters.Count > 0)
+        {
+            var resultHasRows = result.HasRows;
+            if (resultHasRows)
+            {
+                var oldCurrentRow = result.SetCurrentRow(0);
+                foreach (var dbParameter in outParameters)
+                {
+                    if (dbParameter.Direction == ParameterDirection.Input) continue;
+                    var field = _fields.FirstOrDefault(f => f.Name == dbParameter.ParameterName);
+                    if (field != null)
+                    {
+                        var dbParameterValue = result.GetValue(dbParameter.ParameterName);
+                        dbParameter.Value = PgwConverter.convert(field, dbParameterValue);
+                    }
+                }
+
+                result.SetCurrentRow(oldCurrentRow);
+            }
+        }
+    }
 
 
     public override object? ExecuteScalar()
@@ -258,7 +283,25 @@ public class PgwCommand : DbCommand,IDisposable
         SqlParameterType parametersType;
         var parametersCollection =((PgwParameterCollection) DbParameterCollection).Clone();
         var parameters = SqlParser.getParameters(query, out parametersType);
-  
+
+        if (parametersCollection.Data.Any(p => p.ParameterName == null && p.Direction != ParameterDirection.Input))
+        {
+            throw new InvalidOperationException("Unnamed output unsupported");
+        }
+        if (parametersCollection.Data.Any(p => p.Value == null && p.Direction == ParameterDirection.Input
+            ))
+        {
+            throw new InvalidOperationException("Parameter without value");
+        }
+
+        if (parametersType==SqlParameterType.UNNAMED || parametersType==SqlParameterType.NONE)
+        {
+            while (parametersCollection.Data.Count > parameters.Count)
+            {
+                parametersCollection.Data.RemoveAt(parametersCollection.Data.Count-1);
+            }
+        }
+
         var parsedNamed = parameters.
             FindAll(t=>t.Named).
             GroupBy(test => test.Name).

@@ -26,6 +26,13 @@ public class PgwDataReader : DbDataReader
     private CommandBehavior _behavior = CommandBehavior.Default;
     private int _lastExecuteRequest;
     private int _currentRow=-1;
+
+    public int SetCurrentRow(int newValue)
+    {
+        var res = _currentRow;
+        _currentRow = newValue;
+        return res;
+    }
     private List<List<object>> _rows = new ();
     private readonly PgwCommand _command;
     private int? _commandCompleteResult;
@@ -169,7 +176,7 @@ public class PgwDataReader : DbDataReader
             throw new InvalidOperationException();
         }
     }
-
+    
     public override object GetValue(int ordinal)
     {
         return _rows[_currentRow][ordinal];

@@ -21,6 +21,21 @@ public class SqlParserParametersTest
     }
 
     [Test]
+    public void parDeclaration()
+    {
+        var query = "SELECT @c-1 AS c, @a+2 AS b";
+        SqlParameterType parametersType;
+        var parameters = new PgwParameterCollection();
+        parameters.Add(new PgwParameter("p1", DbType.String) { Value = "test" });
+        var foundedParameters = SqlParser.getParameters(query, out parametersType);
+
+        Assert.AreEqual(2, foundedParameters.Count);
+        Assert.AreEqual("@c", foundedParameters[0].Name);
+        Assert.AreEqual("@a", foundedParameters[1].Name);
+
+    }
+
+    [Test]
     public void surrounded()
     {
         var query = "A=@p1+B";

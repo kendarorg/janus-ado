@@ -9,7 +9,7 @@ namespace PgWireAdo.utils.parse;
 
 public class SqlParser
 {
-    private static Regex namedParametersExpression = new Regex(@"([@|:]{1}[a-zA-Z0-9_\-]+)");
+    private static Regex namedParametersExpression = new Regex(@"([@|:]{1}[a-zA-Z0-9_]+)");
     private static Regex unnamedParametersExpression = new Regex(@"([?]{1})");
     private static Regex positionalParameterExpression = new Regex(@"([$]{1}[0-9]+)");
 
@@ -272,23 +272,35 @@ public class SqlParser
     {
         var sqlParameters = new List<SqlParameter>();
         type = SqlParameterType.NONE;
-        if (!FindMatches(input, unnamedParametersExpression, sqlParameters,false))
-        {
-            if (!FindMatches(input, positionalParameterExpression, sqlParameters,false))
-            {
-                if (FindMatches(input, namedParametersExpression, sqlParameters,true))
-                {
-                    type = SqlParameterType.NAMED;
-                }
-            }
-            else
-            {
-                type = SqlParameterType.POSITIONAL;
-            }
-        }
-        else
+        var sqlParametersUnamed = new List<SqlParameter>();
+        if (FindMatches(input, unnamedParametersExpression, sqlParametersUnamed, false))
         {
             type = SqlParameterType.UNNAMED;
+            sqlParameters.AddRange(sqlParametersUnamed);
+
+
+        }
+
+        var sqlParametersPositional = new List<SqlParameter>();
+        if (FindMatches(input, positionalParameterExpression, sqlParametersPositional, false))
+        {
+            if (type != SqlParameterType.NONE)
+            {
+                throw new InvalidOperationException("Cannot mix parameter styles");
+            }
+            type = SqlParameterType.POSITIONAL;
+            sqlParameters.AddRange(sqlParametersPositional);
+        }
+
+        var sqlParametersNamed = new List<SqlParameter>();
+        if (FindMatches(input, namedParametersExpression, sqlParametersNamed, true))
+        {
+            if (type != SqlParameterType.NONE)
+            {
+                throw new InvalidOperationException("Cannot mix parameter styles");
+            }
+            type = SqlParameterType.NAMED;
+            sqlParameters.AddRange(sqlParametersNamed);
         }
         
         
