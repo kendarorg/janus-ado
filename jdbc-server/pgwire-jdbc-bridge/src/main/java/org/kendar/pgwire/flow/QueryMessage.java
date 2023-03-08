@@ -12,7 +12,7 @@ public class QueryMessage implements PgwFlowMessage{
 
     @Override
     public void read(DataMessage message) throws IOException {
-        query = message.readString();
+        query = message.readStringUtf8();
         System.out.println("[SERVER] Query: "+query);
     }
 

@@ -1,6 +1,7 @@
 package org.kendar.pgwire.commons;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 public class DataMessage {
     private int cursor = 0;
@@ -62,6 +63,20 @@ public class DataMessage {
             count++;
         }
         return new String(data,base,count);
+    }
+
+    public String readStringUtf8(){
+        var base = cursor;
+        var count =0;
+        for(;cursor<data.length;cursor++){
+
+            if(data[cursor]==0x00){
+                cursor++;
+                break;
+            }
+            count++;
+        }
+        return new String(data,base,count, StandardCharsets.UTF_8);
     }
 
     public byte[] readBytes(int parameterLength) {

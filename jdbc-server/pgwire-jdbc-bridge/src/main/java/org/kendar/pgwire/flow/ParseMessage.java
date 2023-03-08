@@ -46,7 +46,7 @@ public class ParseMessage implements PgwFlowMessage{
     @Override
     public void read(DataMessage message) throws IOException {
         statementName = message.readString();
-        query = message.readString();
+        query = message.readStringUtf8();
         System.out.println("[SERVER] ExtQuery: "+query);
         var paramsCount = message.getShort();
         oids = new ArrayList<Integer>();

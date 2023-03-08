@@ -27,7 +27,7 @@ public class BindMessage implements PgwFlowMessage{
         for(var i=0;i<parameterValuesCount;i++){
             var parameterLength = message.readInt();
             if(formatCodes.get(i)==0) {
-                parameterValues.add(message.readString());
+                parameterValues.add(message.readStringUtf8());
             }else{
                 parameterValues.add(message.readBytes(parameterLength));
             }
